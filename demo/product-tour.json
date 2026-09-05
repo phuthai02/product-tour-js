@@ -1,0 +1,30 @@
+{
+  "$schema": "../product-tour.schema.json",
+  "id": "dynamic-onboarding",
+  "version": 2,
+  "autoStart": true,
+  "showOnce": true,
+  "markOnDismiss": false,
+  "watchRoutes": true,
+  "labels": {
+    "next": "Tiếp",
+    "previous": "Quay lại",
+    "finish": "Hoàn tất",
+    "skip": "Bỏ qua",
+    "close": "Đóng",
+    "progress": "Bước {current}/{total}",
+    "required": "Vui lòng trả lời các câu hỏi bắt buộc."
+  },
+  "theme": {
+    "accentColor": "#7c3aed",
+    "borderRadius": "14px"
+  },
+  "progress": {
+    "type": "dots",
+    "position": "top-left"
+  },
+  "include": [
+    "./tours/shared-pages.json",
+    "./tours/project.json"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "$schema": "../../product-tour.schema.json",
+  "pages": [
+    {
+      "id": "home",
+      "match": "/demo/",
+      "steps": [
+        {
+          "id": "welcome",
+          "type": "modal",
+          "title": "Chào mừng bạn!",
+          "content": "Tour này kết hợp modal, câu hỏi, rẽ nhánh và tooltip trong cùng một file JSON.",
+          "actions": [
+            { "id": "later", "label": "Để sau", "action": "dismiss", "variant": "link" },
+            { "id": "start", "label": "Thiết lập trải nghiệm", "action": "next", "variant": "primary" }
+          ]
+        },
+        {
+          "id": "profile",
+          "type": "question",
+          "title": "Cá nhân hoá hướng dẫn",
+          "content": "Câu trả lời chỉ được trả về cho ứng dụng demo, thư viện không tự gửi chúng đi đâu.",
+          "fields": [
+            {
+              "name": "displayName",
+              "type": "text",
+              "label": "Tên của bạn",
+              "placeholder": "Ví dụ: Minh",
+              "required": true,
+              "validationMessage": "Hãy nhập tên để tiếp tục."
+            },
+            {
+              "name": "role",
+              "type": "radio",
+              "label": "Vai trò chính",
+              "required": true,
+              "options": [
+                { "label": "Developer", "value": "developer" },
+                { "label": "Quản lý sản phẩm", "value": "manager" }
+              ]
+            },
+            {
+              "name": "interests",
+              "type": "checkbox",
+              "label": "Bạn quan tâm đến",
+              "required": true,
+              "options": [
+                { "label": "Tự động hoá", "value": "automation" },
+                { "label": "Báo cáo", "value": "reporting" },
+                { "label": "Cộng tác nhóm", "value": "collaboration" }
+              ]
+            },
+            {
+              "name": "receiveTips",
+              "type": "checkbox",
+              "label": "Hiển thị mẹo sử dụng trong ứng dụng"
+            }
+          ],
+          "next": [
+            { "when": { "field": "role", "equals": "developer" }, "stepId": "search" },
+            { "stepId": "team-workspace" }
+          ],
+          "actions": [
+            { "id": "back", "label": "Quay lại", "action": "back", "variant": "secondary" },
+            { "id": "continue", "label": "Tạo lộ trình", "action": "next", "variant": "primary" }
+          ]
+        },
+        {
+          "id": "search",
+          "type": "tooltip",
+          "target": "#search",
+          "title": "Tìm kiếm dành cho developer",
+          "content": "Nhánh này chỉ xuất hiện khi bạn chọn Developer.",
+          "placement": "bottom",
+          "next": "create"
+        },
+        {
+          "id": "team-workspace",
+          "type": "modal",
+          "title": "Workspace dành cho đội nhóm",
+          "content": "Nhánh này chỉ xuất hiện khi bạn chọn Quản lý sản phẩm.",
+          "next": "create"
+        },
+        {
+          "id": "create",
+          "type": "tooltip",
+          "target": "#create-button",
+          "title": "Sẵn sàng bắt đầu",
+          "content": "Bạn có thể dùng câu trả lời để cá nhân hoá phần còn lại của ứng dụng.",
+          "placement": "right",
+          "allowInteraction": true,
+          "actions": [
+            { "id": "back", "label": "Quay lại", "action": "back", "variant": "secondary" },
+            { "id": "analytics", "label": "Ghi nhận sự kiện", "action": "emit", "event": "demo-analytics", "variant": "secondary" },
+            { "id": "done", "label": "Hoàn tất", "action": "finish", "variant": "primary" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "match": "/demo/settings",
+      "theme": { "accentColor": "#0891b2" },
+      "progress": { "type": "bar", "position": "top-center" },
+      "steps": [
+        {
+          "id": "settings-welcome",
+          "type": "modal",
+          "title": "Thiết lập workspace",
+          "content": "Home và Settings đang dùng chung một file page group."
+        },
+        {
+          "id": "settings-panel",
+          "type": "tooltip",
+          "target": "#settings-panel",
+          "title": "Tuỳ chọn của bạn",
+          "content": "Mỗi page vẫn có thể override theme và các tuỳ chọn riêng.",
+          "placement": "right"
+        }
+      ]
+    }
+  ]
+}

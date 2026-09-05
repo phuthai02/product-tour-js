@@ -1,0 +1,32 @@
+{
+  "$schema": "../../product-tour.schema.json",
+  "id": "project-detail",
+  "match": {
+    "path": "/demo/projects/:id",
+    "mode": "glob"
+  },
+  "theme": {
+    "accentColor": "#ea580c"
+  },
+  "progress": {
+    "type": "text",
+    "position": "bottom-right"
+  },
+  "steps": [
+    {
+      "id": "project-tour",
+      "type": "tooltip",
+      "target": "#project-panel",
+      "title": "Chi tiết dự án",
+      "content": "Tour này là một page trực tiếp nằm trong file JSON riêng."
+    },
+    {
+      "id": "project-tour-2",
+      "type": "tooltip",
+      "target": "#restart-button",
+      "title": "Xem lại tour",
+      "content": "Tour này là một page trực tiếp nằm trong file JSON riêng.",
+      "placement": "right"
+    }
+  ]
+}

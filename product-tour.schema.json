@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/product-tour.schema.json",
+  "title": "product-tour-js configuration",
+  "type": "object",
+  "anyOf": [
+    { "required": ["steps"] },
+    { "required": ["pages"] },
+    { "required": ["include"] }
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "minLength": 1 },
+    "version": { "type": ["string", "number"] },
+    "autoStart": { "type": "boolean", "default": true },
+    "showOnce": { "type": "boolean", "default": true },
+    "markOnDismiss": { "type": "boolean", "default": true },
+    "storage": { "enum": ["local", "session", "none"], "default": "local" },
+    "storageKey": { "type": "string", "default": "product-tour" },
+    "startDelay": { "type": "number", "minimum": 0, "default": 0 },
+    "targetTimeout": { "type": "number", "minimum": 0, "default": 3000 },
+    "onMissingTarget": { "enum": ["skip", "abort"], "default": "skip" },
+    "closeOnEscape": { "type": "boolean", "default": true },
+    "closeOnOverlayClick": { "type": "boolean", "default": false },
+    "showCloseButton": { "type": "boolean", "default": true },
+    "allowHtml": { "type": "boolean", "default": false },
+    "progress": { "$ref": "#/$defs/progress" },
+    "watchRoutes": { "type": "boolean", "default": true },
+    "match": { "$ref": "#/$defs/pageMatch" },
+    "enabled": { "type": "boolean", "default": true },
+    "include": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "next": { "type": "string" },
+        "previous": { "type": "string" },
+        "finish": { "type": "string" },
+        "skip": { "type": "string" },
+        "close": { "type": "string" },
+        "progress": { "type": "string" },
+        "required": { "type": "string" }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accentColor": { "type": "string" },
+        "overlayColor": { "type": "string" },
+        "borderRadius": { "type": "string" },
+        "zIndex": { "type": "number" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/page" }
+    }
+  },
+  "$defs": {
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["none", "text", "dots", "bar"], "default": "text" },
+        "position": {
+          "enum": [
+            "top-left", "top-center", "top-right",
+            "bottom-left", "bottom-center", "bottom-right"
+          ],
+          "default": "bottom-left"
+        }
+      }
+    },
+    "option": {
+      "oneOf": [
+        { "type": ["string", "number", "boolean"] },
+        {
+          "type": "object",
+          "required": ["value"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string" },
+            "value": { "type": ["string", "number", "boolean"] },
+            "disabled": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "field": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["text", "radio", "checkbox"], "default": "text" },
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "required": { "type": "boolean", "default": false },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/option" } },
+        "defaultValue": {
+          "type": ["string", "number", "boolean", "array", "null"],
+          "items": { "type": ["string", "number", "boolean"] }
+        },
+        "validationMessage": { "type": "string" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["action"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "action": { "enum": ["next", "back", "finish", "dismiss", "goTo", "emit"] },
+        "variant": { "enum": ["primary", "secondary", "link"] },
+        "targetStep": { "type": "string" },
+        "event": { "type": "string" }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "required": ["field"],
+      "additionalProperties": false,
+      "properties": {
+        "field": { "type": "string" },
+        "stepId": { "type": "string" },
+        "equals": {},
+        "notEquals": {},
+        "includes": {},
+        "exists": { "type": "boolean" }
+      },
+      "oneOf": [
+        { "required": ["equals"] },
+        { "required": ["notEquals"] },
+        { "required": ["includes"] },
+        { "required": ["exists"] }
+      ]
+    },
+    "nextRule": {
+      "type": "object",
+      "required": ["stepId"],
+      "additionalProperties": false,
+      "properties": {
+        "stepId": { "type": "string" },
+        "when": { "$ref": "#/$defs/condition" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "enum": ["tooltip", "modal", "question"] },
+        "target": { "type": ["string", "null"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "placement": { "enum": ["auto", "top", "right", "bottom", "left", "center"] },
+        "allowInteraction": { "type": "boolean", "default": true },
+        "nextOnTargetClick": { "type": "boolean", "default": false },
+        "showCloseButton": { "type": "boolean" },
+        "padding": { "type": "number", "minimum": 0, "default": 8 },
+        "progress": { "$ref": "#/$defs/progress" },
+        "fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/field" } },
+        "actions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/action" } },
+        "next": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nextRule" } }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "tooltip" } }, "required": ["type"] },
+          "then": { "required": ["target"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "question" } }, "required": ["type"] },
+          "then": { "required": ["fields"] }
+        }
+      ]
+    },
+    "pageMatch": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "mode": { "enum": ["exact", "prefix", "glob"] },
+            "hash": { "type": "string" },
+            "query": {
+              "type": "object",
+              "additionalProperties": { "type": ["string", "number", "boolean"] }
+            }
+          }
+        }
+      ]
+    },
+    "page": {
+      "type": "object",
+      "required": ["id", "match", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "match": { "$ref": "#/$defs/pageMatch" },
+        "enabled": { "type": "boolean", "default": true },
+        "version": { "type": ["string", "number"] },
+        "autoStart": { "type": "boolean" },
+        "showOnce": { "type": "boolean" },
+        "markOnDismiss": { "type": "boolean" },
+        "storage": { "enum": ["local", "session", "none"] },
+        "storageKey": { "type": "string" },
+        "startDelay": { "type": "number", "minimum": 0 },
+        "targetTimeout": { "type": "number", "minimum": 0 },
+        "onMissingTarget": { "enum": ["skip", "abort"] },
+        "closeOnEscape": { "type": "boolean" },
+        "closeOnOverlayClick": { "type": "boolean" },
+        "showCloseButton": { "type": "boolean" },
+        "allowHtml": { "type": "boolean" },
+        "progress": { "$ref": "#/$defs/progress" },
+        "labels": { "$ref": "#/properties/labels" },
+        "theme": { "$ref": "#/properties/theme" },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/step" }
+        }
+      }
+    }
+  }
+}

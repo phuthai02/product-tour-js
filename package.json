@@ -1,0 +1,51 @@
+{
+  "name": "product-tour-js",
+  "version": "0.3.0",
+  "description": "A small, framework-agnostic product tour library configured with JSON.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/product-tour.min.js",
+  "jsdelivr": "./dist/product-tour.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./schema": "./product-tour.schema.json"
+  },
+  "files": [
+    "dist",
+    "product-tour.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/config.test.js",
+    "build": "node scripts/build.js",
+    "test:package": "node scripts/test-package.js",
+    "validate": "node --test test/config.test.js && node scripts/build.js && node scripts/test-package.js",
+    "prepack": "node --test test/config.test.js && node scripts/build.js && node scripts/test-package.js",
+    "predemo": "node scripts/build.js",
+    "demo": "node scripts/serve-demo.js",
+    "pack:check": "npm pack --dry-run"
+  },
+  "keywords": [
+    "product-tour",
+    "onboarding",
+    "walkthrough",
+    "vanilla-js"
+  ],
+  "author": "thaidp",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

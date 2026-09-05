@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>product-tour-js demo</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #172033; background: #f7f8fc; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      header { display: flex; align-items: center; gap: 18px; padding: 18px 7vw; background: #fff; border-bottom: 1px solid #e7eaf0; }
+      .brand { font-size: 18px; font-weight: 800; }
+      nav { display: flex; gap: 6px; margin-left: auto; }
+      .nav-button { padding: 9px 11px; color: #667085; background: transparent; font-size: 13px; }
+      .nav-button:hover { color: #5b21b6; background: #f5f3ff; }
+      #search { width: min(300px, 28vw); padding: 11px 14px; border: 1px solid #ccd2dc; border-radius: 10px; font: inherit; }
+      main { width: min(1100px, 86vw); margin: 80px auto; }
+      .hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 50px; align-items: center; }
+      [hidden] { display: none !important; }
+      .route-page { max-width: 760px; margin-inline: auto; }
+      h1 { max-width: 700px; margin: 0 0 18px; font-size: clamp(40px, 6vw, 72px); line-height: 1.03; letter-spacing: -.05em; }
+      p { max-width: 620px; color: #667085; font-size: 18px; line-height: 1.7; }
+      button { padding: 12px 17px; border: 0; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+      #create-button { margin-top: 16px; color: #fff; background: #7c3aed; }
+      #restart-button { color: #5b21b6; background: #ede9fe; }
+      .card { min-height: 320px; padding: 28px; border: 1px solid #e4e7ec; border-radius: 24px; background: linear-gradient(145deg, #fff, #f2ecff); box-shadow: 0 20px 60px rgba(52, 24, 103, .10); }
+      pre { overflow: auto; white-space: pre-wrap; }
+      @media (max-width: 850px) { .hero { grid-template-columns: 1fr; } header { flex-wrap: wrap; padding-inline: 20px; } nav { order: 3; width: 100%; margin-left: 0; } #search { margin-left: auto; } main { margin-top: 50px; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">Acme Workspace</div>
+      <nav aria-label="Demo pages">
+        <button class="nav-button" type="button" data-route="/demo/">Trang chủ</button>
+        <button class="nav-button" type="button" data-route="/demo/settings">Settings</button>
+        <button class="nav-button" type="button" data-route="/demo/projects/42">Dự án #42</button>
+      </nav>
+      <input id="search" type="search" placeholder="Tìm kiếm..." />
+      <button id="restart-button" type="button">Xem lại tour</button>
+    </header>
+    <main>
+      <section class="hero" data-page="home">
+        <div>
+          <h1>Mọi công việc, trong một workspace.</h1>
+          <p>Trang mẫu để kiểm tra product tour được tải từ một file JSON độc lập.</p>
+          <button id="create-button" type="button">Tạo dự án</button>
+        </div>
+        <div class="card">
+          <strong>Hoạt động gần đây</strong>
+          <p>Không có hoạt động mới. Hãy tạo dự án đầu tiên của bạn.</p>
+          <strong>Câu trả lời của tour</strong>
+          <pre id="answers">Chưa có câu trả lời</pre>
+        </div>
+      </section>
+      <section class="route-page" data-page="settings" hidden>
+        <div class="card" id="settings-panel">
+          <h2>Settings</h2>
+          <p>Cấu hình workspace, thành viên và thông báo tại đây.</p>
+        </div>
+      </section>
+      <section class="route-page" data-page="project" hidden>
+        <div class="card" id="project-panel">
+          <h2>Dự án #42</h2>
+          <p>Page này được match bằng pattern <code>/demo/projects/:id</code>.</p>
+        </div>
+      </section>
+    </main>
+    <script type="module">
+      import { initProductTours } from "../dist/index.js";
+
+      const answers = document.querySelector("#answers");
+      const pages = [...document.querySelectorAll("[data-page]")];
+      function renderRoute() {
+        const path = location.pathname;
+        for (const page of pages) {
+          page.hidden = page.dataset.page === "home"
+            ? path !== "/demo/"
+            : page.dataset.page === "settings"
+              ? path !== "/demo/settings"
+              : !path.startsWith("/demo/projects/");
+        }
+      }
+      renderRoute();
+      window.addEventListener("popstate", renderRoute);
+      for (const link of document.querySelectorAll("[data-route]")) {
+        link.addEventListener("click", () => {
+          history.pushState({}, "", link.dataset.route);
+          renderRoute();
+        });
+      }
+
+      const manager = await initProductTours("./product-tour.json", {
+        onComplete(result, _tour, pageId) {
+          answers.textContent = `${pageId}:\n${JSON.stringify(result, null, 2)}`;
+        },
+        onEvent(name, detail) {
+          if (name === "demo-analytics") {
+            answers.textContent = `Custom event:\n${JSON.stringify(detail.answers, null, 2)}`;
+          }
+        }
+      });
+      document.querySelector("#restart-button").addEventListener("click", async () => {
+        if (!manager.activePageId) return;
+        manager.reset(manager.activePageId);
+        await manager.startPage(manager.activePageId, { force: true });
+      });
+    </script>
+  </body>
+</html>
