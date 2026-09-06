@@ -2,6 +2,14 @@
   "name": "product-tour-js",
   "version": "0.3.0",
   "description": "A small, framework-agnostic product tour library configured with JSON.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phuthai02/product-tour-js.git"
+  },
+  "homepage": "https://github.com/phuthai02/product-tour-js#readme",
+  "bugs": {
+    "url": "https://github.com/phuthai02/product-tour-js/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
