@@ -1715,7 +1715,7 @@ Target render động được chờ tối đa `targetTimeout`. `watchRoutes` ch
 
 - Badge npm ở đầu README phản ánh version và lượt tải hiện tại trên registry.
 - Nhánh `main` là tài liệu và source mới nhất.
-- npm `0.3.1` chưa có `ProductTourService` và option `scrollBehavior`; hai API này đang có trên `main` và cần một bản phát hành mới.
+- Từ npm `0.4.0`, package có `ProductTourService` framework-neutral và option `scrollBehavior`.
 - Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License
