@@ -1193,6 +1193,83 @@ await productTours.startPage("booking");
 
 Hook `translate` có thể trả về string hoặc Promise. Hook `onLanguageChange` nhận callback reload và có thể trả về một hàm cleanup hoặc object có method `unsubscribe()`, nên có thể nối với RxJS, EventEmitter hoặc hệ thống i18n bất kỳ.
 
+### Angular với ngx-translate
+
+Đăng ký service một lần trong `bootstrap.ts` hoặc application config. Không cần tự viết lại class quản lý manager:
+
+```ts
+import { ENVIRONMENT_INITIALIZER, inject } from "@angular/core";
+import { TranslateService } from "@ngx-translate/core";
+import { ProductTourService, createProductTourService } from "product-tour-js";
+
+bootstrapApplication(MainComponent, {
+  providers: [
+    {
+      provide: ProductTourService,
+      useFactory: () => {
+        const translate = inject(TranslateService);
+        return createProductTourService({
+          source: "/content/product-tours/product-tour.json",
+          translate: (key) => translate.instant(key),
+          onLanguageChange: (reload) => translate.onLangChange.subscribe(reload)
+        });
+      }
+    },
+    {
+      provide: ENVIRONMENT_INITIALIZER,
+      multi: true,
+      useValue: () => {
+        void inject(ProductTourService).initialize();
+      }
+    }
+  ]
+});
+```
+
+Trong bất kỳ component hoặc service nào:
+
+```ts
+import { inject } from "@angular/core";
+import { ProductTourService } from "product-tour-js";
+
+export class BookingComponent {
+  private readonly productTours = inject(ProductTourService);
+
+  showTour(): void {
+    void this.productTours.startPage("booking");
+  }
+}
+```
+
+### React, Vue và JavaScript thuần
+
+Tạo singleton một lần trong `product-tours.ts`:
+
+```ts
+import { createProductTourService } from "product-tour-js";
+
+export const productTours = createProductTourService({
+  source: "/content/product-tours/product-tour.json",
+  translate: (key) => i18n.t(key),
+  onLanguageChange: (reload) => {
+    i18n.on("languageChanged", reload);
+    return () => i18n.off("languageChanged", reload);
+  }
+});
+
+void productTours.initialize();
+```
+
+Các component hoặc module chỉ import singleton:
+
+```ts
+import { productTours } from "./product-tours";
+
+void productTours.startPage("booking");
+```
+
+Gọi `productTours.destroy()` khi application root bị unmount nếu lifecycle của ứng dụng có bước teardown.
+
 Các option của service:
 
 | Option | Mặc định | Ý nghĩa |
@@ -1205,6 +1282,16 @@ Các option của service:
 | `onLanguageChange` | Không có | Đăng ký callback khi đổi ngôn ngữ |
 | `reloadOnLanguageChange` | `true` | Reload manager khi ngôn ngữ đổi |
 | `runtime` | `{}` | Các runtime option chuyển cho manager |
+
+Các method chính:
+
+| Method | Ý nghĩa |
+| --- | --- |
+| `initialize()` | Đăng ký listener ngôn ngữ và tạo manager lần đầu |
+| `getManager()` | Lấy manager hiện tại, tự tạo nếu chưa có |
+| `startPage(pageId, options)` | Reload manifest và chạy page; mặc định `force: true` |
+| `reload(options)` | Hủy manager cũ, tải lại manifest và trả manager mới |
+| `destroy()` | Hủy subscription ngôn ngữ và manager |
 
 ## JavaScript API
 
