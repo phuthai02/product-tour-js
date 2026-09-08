@@ -6,6 +6,7 @@ export const PRODUCT_TOUR_STYLES = `
 .pt-target-blocker { position: fixed; z-index: calc(var(--pt-z) + 1); background: transparent; }
 .pt-spotlight { position: fixed; z-index: calc(var(--pt-z) + 1); pointer-events: none; border: 2px solid color-mix(in srgb, var(--pt-accent) 72%, white); border-radius: var(--pt-radius); background: transparent; box-shadow: 0 0 0 100vmax var(--pt-overlay), 0 0 0 3px color-mix(in srgb, var(--pt-accent) 20%, transparent); transition: top .22s cubic-bezier(.22,1,.36,1), left .22s cubic-bezier(.22,1,.36,1), width .22s cubic-bezier(.22,1,.36,1), height .22s cubic-bezier(.22,1,.36,1), border-color .12s ease; }
 .pt-spotlight[data-has-target="false"] { border-color: transparent; border-radius: 999px; background: var(--pt-overlay); box-shadow: 0 0 0 100vmax var(--pt-overlay); }
+.pt-root[data-scrolling="true"] .pt-spotlight { border-color: transparent; border-radius: 0; background: var(--pt-overlay); box-shadow: 0 0 0 100vmax var(--pt-overlay); }
 .pt-popover { position: fixed; z-index: calc(var(--pt-z) + 2); width: min(360px, calc(100vw - 24px)); max-height: min(640px, calc(100vh - 24px)); overflow: auto; padding: 20px; color: #172033; background: #fff; border: 1px solid rgba(15,23,42,.10); border-radius: var(--pt-radius); box-shadow: 0 18px 50px rgba(15,23,42,.24); outline: none; }
 .pt-popover--hidden { visibility: hidden; }
 .pt-root[data-step-type="modal"] .pt-popover { width: min(480px, calc(100vw - 24px)); padding: 26px; }

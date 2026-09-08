@@ -1,6 +1,7 @@
 const PLACEMENTS = new Set(["auto", "top", "right", "bottom", "left", "center"]);
 const STORAGE_TYPES = new Set(["local", "session", "none"]);
 const MISSING_TARGET_BEHAVIORS = new Set(["skip", "abort"]);
+const SCROLL_BEHAVIORS = new Set(["auto", "smooth"]);
 const STEP_TYPES = new Set(["tooltip", "modal", "question"]);
 const FIELD_TYPES = new Set(["text", "radio", "checkbox"]);
 const ACTION_TYPES = new Set(["next", "back", "finish", "dismiss", "goTo", "emit"]);
@@ -13,7 +14,7 @@ const PROGRESS_POSITIONS = new Set([
 ]);
 const TOUR_OPTION_KEYS = [
   "version", "autoStart", "showOnce", "markOnDismiss", "storage", "storageKey",
-  "startDelay", "targetTimeout", "onMissingTarget", "closeOnEscape",
+  "startDelay", "targetTimeout", "scrollBehavior", "onMissingTarget", "closeOnEscape",
   "closeOnOverlayClick", "showCloseButton", "allowHtml", "labels", "theme", "progress"
 ];
 
@@ -27,6 +28,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   storageKey: "product-tour",
   startDelay: 0,
   targetTimeout: 3000,
+  scrollBehavior: "smooth",
   onMissingTarget: "skip",
   closeOnEscape: true,
   closeOnOverlayClick: false,
@@ -255,9 +257,11 @@ export function defineTourConfig(input) {
   );
   const storage = input.storage ?? DEFAULT_CONFIG.storage;
   const onMissingTarget = input.onMissingTarget ?? DEFAULT_CONFIG.onMissingTarget;
+  const scrollBehavior = input.scrollBehavior ?? DEFAULT_CONFIG.scrollBehavior;
   const showCloseButton = input.showCloseButton ?? DEFAULT_CONFIG.showCloseButton;
   assert(STORAGE_TYPES.has(storage), '"storage" must be "local", "session", or "none".');
   assert(MISSING_TARGET_BEHAVIORS.has(onMissingTarget), '"onMissingTarget" must be "skip" or "abort".');
+  assert(SCROLL_BEHAVIORS.has(scrollBehavior), '"scrollBehavior" must be "auto" or "smooth".');
   assert(typeof showCloseButton === "boolean", '"showCloseButton" must be a boolean.');
 
   const progress = normalizeProgress(input.progress);
@@ -269,6 +273,7 @@ export function defineTourConfig(input) {
     id: id.trim(),
     storage,
     onMissingTarget,
+    scrollBehavior,
     showCloseButton,
     startDelay: finiteNonNegative(input.startDelay, DEFAULT_CONFIG.startDelay, "startDelay"),
     targetTimeout: finiteNonNegative(input.targetTimeout, DEFAULT_CONFIG.targetTimeout, "targetTimeout"),

@@ -1,5 +1,6 @@
 import { ProductTour } from "./ProductTour.js";
 import { ProductTourManager } from "./ProductTourManager.js";
+import { ProductTourService, createProductTourService } from "./ProductTourService.js";
 import { defineTourConfig, defineTourManifest, loadTourConfig, loadTourManifest } from "./config.js";
 
 /**
@@ -34,6 +35,8 @@ export async function initProductTours(source = "/product-tour.json", options = 
 export {
   ProductTour,
   ProductTourManager,
+  ProductTourService,
+  createProductTourService,
   defineTourConfig,
   defineTourManifest,
   loadTourConfig,

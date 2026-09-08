@@ -258,6 +258,17 @@ Nếu vị trí chỉ định không đủ chỗ, thư viện có thể chọn p
 
 Khi target bị khuất một phần hoặc nằm ngoài viewport, thư viện tự cuộn target vào vùng nhìn thấy tốt nhất có thể. Trong lúc cuộn, tooltip hiện tại được ẩn và tooltip của step mới chỉ xuất hiện sau khi thao tác cuộn đã ổn định. Chuyển động cuộn tự động tôn trọng thiết lập `prefers-reduced-motion` của user.
 
+Mặc định tour cuộn mượt. Đặt `scrollBehavior: "auto"` ở cấp tour nếu muốn chuyển ngay đến target. Trong lúc auto-scroll, cả tooltip và vùng spotlight của target cũ được ẩn; chúng chỉ xuất hiện lại tại target mới sau khi cuộn ổn định.
+
+```json
+{
+  "scrollBehavior": "auto",
+  "steps": [
+    { "target": "#search", "title": "Tìm kiếm" }
+  ]
+}
+```
+
 Trong khi tour đang mở, trang và vùng target được khóa cuộn bằng chuột hoặc thao tác chạm để spotlight không bị lệch ngoài ý muốn. Nội dung bên trong popover vẫn cuộn được nếu dài hơn chiều cao khả dụng.
 
 `allowInteraction: true` cho phép user click vào target đang được spotlight. Đặt thành `false` để chặn tương tác với target trong step đó.
@@ -1153,6 +1164,48 @@ document.addEventListener("product-tour:answer", (event) => {
 
 Không nên đưa access token hoặc secret vào `product-tour.json` vì file JSON public có thể được mọi user tải xuống.
 
+## Dùng chung trong mọi framework
+
+`ProductTourService` gom sẵn logic tải manifest, cache-bust khi reload, dịch các chuỗi bắt đầu bằng `i18n:`, theo dõi đổi ngôn ngữ và hủy manager. Service này là JavaScript thuần, không phụ thuộc Angular, React hay Vue.
+
+Cấu hình một instance duy nhất trong file dùng chung của application:
+
+```js
+import { createProductTourService } from "product-tour-js";
+import { i18n } from "./i18n.js";
+
+export const productTours = createProductTourService({
+  source: "/content/product-tours/product-tour.json",
+  translate: (key) => i18n.translate(key),
+  onLanguageChange: (reload) => i18n.onLanguageChange(reload)
+});
+
+void productTours.initialize();
+```
+
+Sau đó mọi module chỉ cần import instance và sử dụng:
+
+```js
+import { productTours } from "./product-tours.js";
+
+await productTours.startPage("booking");
+```
+
+Hook `translate` có thể trả về string hoặc Promise. Hook `onLanguageChange` nhận callback reload và có thể trả về một hàm cleanup hoặc object có method `unsubscribe()`, nên có thể nối với RxJS, EventEmitter hoặc hệ thống i18n bất kỳ.
+
+Các option của service:
+
+| Option | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `source` | `/product-tour.json` | URL hoặc manifest object |
+| `autoStart` | `true` | Tự chạy tour khớp route khi initialize |
+| `cacheBust` | `true` | Thêm timestamp khi reload manifest |
+| `translationPrefix` | `i18n:` | Prefix nhận diện translation key |
+| `translate` | Không có | Hàm dịch key, sync hoặc async |
+| `onLanguageChange` | Không có | Đăng ký callback khi đổi ngôn ngữ |
+| `reloadOnLanguageChange` | `true` | Reload manager khi ngôn ngữ đổi |
+| `runtime` | `{}` | Các runtime option chuyển cho manager |
+
 ## JavaScript API
 
 ### Hàm khởi tạo
@@ -1279,6 +1332,7 @@ document.addEventListener("product-tour:complete", (event) => {
 | `storageKey` | string | `product-tour` | Prefix của completion key |
 | `startDelay` | number | `0` | Số ms chờ trước khi bắt đầu |
 | `targetTimeout` | number | `3000` | Số ms chờ target render |
+| `scrollBehavior` | string | `smooth` | Cách tự cuộn đến target: `smooth` hoặc `auto` |
 | `onMissingTarget` | string | `skip` | `skip` step hoặc `abort` tour |
 | `closeOnEscape` | boolean | `true` | Cho phép Escape đóng tour |
 | `closeOnOverlayClick` | boolean | `false` | Cho phép click overlay đóng tour |

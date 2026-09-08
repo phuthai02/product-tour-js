@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   ProductTour,
   ProductTourManager,
+  createProductTourService,
   defineTourConfig,
   defineTourManifest,
   loadTourConfig,
@@ -21,11 +22,20 @@ test("defineTourConfig applies safe defaults", () => {
   assert.equal(config.autoStart, true);
   assert.equal(config.showOnce, true);
   assert.equal(config.allowHtml, false);
+  assert.equal(config.scrollBehavior, "smooth");
   assert.equal(config.showCloseButton, true);
   assert.deepEqual(config.progress, { type: "text", position: "bottom-left" });
   assert.equal(config.steps[0].placement, "auto");
   assert.equal(config.steps[0].allowInteraction, true);
   assert.equal(config.steps[0].showCloseButton, true);
+});
+
+test("scroll behavior supports smooth and immediate target scrolling", () => {
+  assert.equal(defineTourConfig({ ...minimalConfig, scrollBehavior: "auto" }).scrollBehavior, "auto");
+  assert.throws(
+    () => defineTourConfig({ ...minimalConfig, scrollBehavior: "slow" }),
+    /scrollBehavior.*auto.*smooth/
+  );
 });
 
 test("close button visibility can be configured for the tour and overridden per step", () => {
@@ -161,17 +171,17 @@ test("partially clipped targets are centered while the popover stays hidden", as
     }
   };
   const tour = new ProductTour(
-    { steps: [{ target: "#create", title: "Create" }] },
+    { scrollBehavior: "auto", steps: [{ target: "#create", title: "Create" }] },
     {
       window: {
         innerWidth: 1000,
         innerHeight: 700,
-        matchMedia: () => ({ matches: true }),
+        matchMedia: () => ({ matches: false }),
         requestAnimationFrame(callback) { callback(); }
       }
     }
   );
-  tour.root = { querySelector: () => popover };
+  tour.root = { dataset: {}, querySelector: () => popover };
   const target = {
     getBoundingClientRect: () => ({ top: -10, left: 100, right: 300, bottom: 90 }),
     scrollIntoView(options) { changes.push({ scroll: options }); }
@@ -183,6 +193,7 @@ test("partially clipped targets are centered while the popover stays hidden", as
     "hide:pt-popover--hidden",
     { scroll: { behavior: "auto", block: "center", inline: "center" } }
   ]);
+  assert.equal(tour.root.dataset.scrolling, "true");
 });
 
 test("fully visible targets do not trigger scrolling or hide the popover", async () => {
@@ -356,4 +367,34 @@ test("loadTourManifest rejects circular includes", async () => {
     }),
     /Circular manifest include/
   );
+});
+
+test("framework-neutral service localizes manifests and owns language subscriptions", async () => {
+  let languageListener;
+  let unsubscribed = false;
+  const service = createProductTourService({
+    source: {
+      autoStart: false,
+      pages: [
+        {
+          id: "home",
+          match: "/",
+          steps: [{ type: "modal", title: "i18n:tour.title" }]
+        }
+      ]
+    },
+    autoStart: false,
+    translate: async (key) => ({ "tour.title": "Welcome" })[key],
+    onLanguageChange(listener) {
+      languageListener = listener;
+      return { unsubscribe() { unsubscribed = true; } };
+    }
+  });
+
+  const manager = await service.initialize();
+
+  assert.equal(typeof languageListener, "function");
+  assert.equal(manager.getTour("home").config.steps[0].title, "Welcome");
+  service.destroy();
+  assert.equal(unsubscribed, true);
 });

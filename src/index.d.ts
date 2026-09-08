@@ -83,6 +83,7 @@ export interface ProductTourConfig {
   storageKey?: string;
   startDelay?: number;
   targetTimeout?: number;
+  scrollBehavior?: "auto" | "smooth";
   onMissingTarget?: "skip" | "abort";
   closeOnEscape?: boolean;
   closeOnOverlayClick?: boolean;
@@ -147,6 +148,36 @@ export interface RuntimeOptions {
   onPageChange?: (pageId: string | null, tour: ProductTour | null, manager: ProductTourManager) => void;
   onError?: (error: Error, manager: ProductTourManager) => void;
 }
+
+export interface ProductTourServiceOptions {
+  source?: ProductTourManifestSource;
+  autoStart?: boolean;
+  cacheBust?: boolean;
+  translationPrefix?: string;
+  reloadOnLanguageChange?: boolean;
+  translate?: (key: string) => string | Promise<string>;
+  onLanguageChange?: (
+    reload: () => void
+  ) => void | (() => void) | { unsubscribe(): void };
+  onError?: (error: unknown) => void;
+  runtime?: RuntimeOptions;
+}
+
+export declare class ProductTourService {
+  constructor(options?: ProductTourServiceOptions);
+  initialize(): Promise<ProductTourManager>;
+  getManager(): Promise<ProductTourManager>;
+  startPage(
+    pageId: string,
+    options?: { force?: boolean; reload?: boolean }
+  ): Promise<ProductTour>;
+  reload(options?: { autoStart?: boolean; cacheBust?: boolean }): Promise<ProductTourManager>;
+  destroy(): void;
+}
+
+export declare function createProductTourService(
+  options?: ProductTourServiceOptions
+): ProductTourService;
 
 export declare class ProductTour {
   constructor(config: ProductTourConfig, runtime?: RuntimeOptions);

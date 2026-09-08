@@ -328,6 +328,7 @@ export class ProductTour {
 
     if (target && step.nextOnTargetClick) target.addEventListener("click", this._onTargetClick);
     this._position(step, target);
+    delete this.root.dataset.scrolling;
     popover.classList.remove("pt-popover--hidden");
     this._animatePopover(popover, previousRect);
     popover.focus({ preventScroll: true });
@@ -604,15 +605,16 @@ export class ProductTour {
 
     // Keep the previous (or not-yet-rendered) tooltip out of view while the
     // browser scrolls the target into its best possible visible position.
+    if (this.root) this.root.dataset.scrolling = "true";
     this.root?.querySelector(".pt-popover")?.classList.add("pt-popover--hidden");
 
     const reducedMotion = this.window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     target.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
+      behavior: reducedMotion ? "auto" : this.config.scrollBehavior,
       block: "center",
       inline: "center"
     });
-    if (reducedMotion) {
+    if (reducedMotion || this.config.scrollBehavior === "auto") {
       await new Promise((resolve) => {
         if (typeof this.window.requestAnimationFrame === "function") this.window.requestAnimationFrame(() => resolve());
         else this.window.setTimeout(resolve, 0);

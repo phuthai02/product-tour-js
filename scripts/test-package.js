@@ -13,12 +13,16 @@ assert.equal(typeof esm.initProductTour, "function", "ESM bundle must expose ini
 assert.equal(typeof esm.initProductTours, "function", "ESM bundle must expose initProductTours");
 assert.equal(typeof esm.ProductTour, "function", "ESM bundle must expose ProductTour");
 assert.equal(typeof esm.ProductTourManager, "function", "ESM bundle must expose ProductTourManager");
+assert.equal(typeof esm.ProductTourService, "function", "ESM bundle must expose ProductTourService");
+assert.equal(typeof esm.createProductTourService, "function", "ESM bundle must expose createProductTourService");
 
 const commonJs = require("product-tour-js");
 assert.equal(typeof commonJs.initProductTour, "function", "CommonJS bundle must expose initProductTour");
 assert.equal(typeof commonJs.initProductTours, "function", "CommonJS bundle must expose initProductTours");
 assert.equal(typeof commonJs.ProductTour, "function", "CommonJS bundle must expose ProductTour");
 assert.equal(typeof commonJs.ProductTourManager, "function", "CommonJS bundle must expose ProductTourManager");
+assert.equal(typeof commonJs.ProductTourService, "function", "CommonJS bundle must expose ProductTourService");
+assert.equal(typeof commonJs.createProductTourService, "function", "CommonJS bundle must expose createProductTourService");
 
 const browserCode = await readFile(resolve(projectRoot, "dist/product-tour.min.js"), "utf8");
 const browserContext = vm.createContext({
@@ -42,6 +46,16 @@ assert.equal(
   typeof browserContext.ProductTourJS?.ProductTourManager,
   "function",
   "IIFE bundle must expose ProductTourJS.ProductTourManager"
+);
+assert.equal(
+  typeof browserContext.ProductTourJS?.ProductTourService,
+  "function",
+  "IIFE bundle must expose ProductTourJS.ProductTourService"
+);
+assert.equal(
+  typeof browserContext.ProductTourJS?.createProductTourService,
+  "function",
+  "IIFE bundle must expose ProductTourJS.createProductTourService"
 );
 
 console.log("Verified ESM, CommonJS, and browser bundles.");
