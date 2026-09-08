@@ -271,7 +271,7 @@ Nếu vị trí chỉ định không đủ chỗ, thư viện có thể chọn p
 
 Khi target bị khuất một phần hoặc nằm ngoài viewport, thư viện tự cuộn target vào vùng nhìn thấy tốt nhất có thể. Trong lúc cuộn, tooltip hiện tại được ẩn và tooltip của step mới chỉ xuất hiện sau khi thao tác cuộn đã ổn định. Chuyển động cuộn tự động tôn trọng thiết lập `prefers-reduced-motion` của user.
 
-Mặc định tour cuộn mượt. Đặt `scrollBehavior: "auto"` ở cấp tour nếu muốn chuyển ngay đến target. Trong lúc auto-scroll, cả tooltip và vùng spotlight của target cũ được ẩn; chúng chỉ xuất hiện lại tại target mới sau khi cuộn ổn định.
+Mặc định tour cuộn mượt. Đặt `scrollBehavior: "auto"` ở cấp tour nếu muốn chuyển ngay đến target. Trong lúc auto-scroll, cả tooltip và vùng spotlight của target cũ được ẩn; chúng chỉ xuất hiện lại tại target mới sau khi cuộn ổn định. Thư viện phát hiện cả target bị nested scroll container, fixed header hoặc sticky element che; page scroll lock được mở tạm trong lúc thư viện tự cuộn và khóa lại ngay sau đó.
 
 ```json
 {
@@ -1752,6 +1752,7 @@ Target render động được chờ tối đa `targetTimeout`. `watchRoutes` ch
 - Từ npm `0.4.0`, package có `ProductTourService` framework-neutral và option `scrollBehavior`.
 - Từ npm `0.4.2`, package có Angular adapter `product-tour-js/angular` và `product-tour-js/angular/ngx-translate`.
 - Từ npm `0.4.3`, Angular subpath có type fallback cho TypeScript dùng `moduleResolution: "node"`.
+- Từ npm `0.4.4`, auto-scroll chờ target ổn định, xử lý nested scroll container và target bị fixed/sticky UI che trước khi hiện tooltip.
 - Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License

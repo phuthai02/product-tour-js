@@ -598,10 +598,7 @@ export class ProductTour {
 
   async _settleTarget(target, runId) {
     if (typeof target.scrollIntoView !== "function") return;
-    const rect = target.getBoundingClientRect();
-    const fullyVisible = rect.top >= 0 && rect.left >= 0
-      && rect.bottom <= this.window.innerHeight && rect.right <= this.window.innerWidth;
-    if (fullyVisible) return;
+    if (this._isTargetFullyVisible(target)) return;
 
     // Keep the previous (or not-yet-rendered) tooltip out of view while the
     // browser scrolls the target into its best possible visible position.
@@ -609,38 +606,120 @@ export class ProductTour {
     this.root?.querySelector(".pt-popover")?.classList.add("pt-popover--hidden");
 
     const reducedMotion = this.window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({
-      behavior: reducedMotion ? "auto" : this.config.scrollBehavior,
-      block: "center",
-      inline: "center"
-    });
-    if (reducedMotion || this.config.scrollBehavior === "auto") {
-      await new Promise((resolve) => {
-        if (typeof this.window.requestAnimationFrame === "function") this.window.requestAnimationFrame(() => resolve());
-        else this.window.setTimeout(resolve, 0);
+    const behavior = reducedMotion ? "auto" : this.config.scrollBehavior;
+    const hadScrollLock = this.scrollLocked;
+
+    // `overflow: hidden` keeps users from moving the page during a tour, but
+    // some browsers also stop a programmatic document scroll before it reaches
+    // the requested element. Wheel/touch handlers remain active while this
+    // lock is briefly released, so only the tour-controlled scroll can move.
+    if (hadScrollLock) this._unlockPageScroll();
+    try {
+      const settled = behavior === "smooth"
+        ? this._waitForTargetToSettle(target, runId)
+        : null;
+      target.scrollIntoView({
+        behavior,
+        block: "center",
+        inline: "center"
       });
-      return;
+      if (settled) await settled;
+      else await this._nextFrame();
+    } finally {
+      if (hadScrollLock && this.isActive) this._lockPageScroll();
+    }
+  }
+
+  _isTargetFullyVisible(target) {
+    const rect = target.getBoundingClientRect();
+    if (rect.top < 0 || rect.left < 0
+      || rect.bottom > this.window.innerHeight || rect.right > this.window.innerWidth) {
+      return false;
     }
 
-    await new Promise((resolve) => {
-      let settledTimer = null;
-      let finished = false;
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(settledTimer);
-        clearTimeout(maxTimer);
-        this.window.removeEventListener("scroll", onScroll, true);
-        resolve();
+    // A target may fit inside the browser viewport while still being clipped
+    // by a nested scrolling panel.
+    if (typeof this.window.getComputedStyle === "function") {
+      for (let ancestor = target.parentElement; ancestor; ancestor = ancestor.parentElement) {
+        const style = this.window.getComputedStyle(ancestor);
+        const clipsX = /^(auto|scroll|hidden|clip|overlay)$/.test(style.overflowX);
+        const clipsY = /^(auto|scroll|hidden|clip|overlay)$/.test(style.overflowY);
+        if (!clipsX && !clipsY) continue;
+        const ancestorRect = ancestor.getBoundingClientRect();
+        if ((clipsX && (rect.left < ancestorRect.left || rect.right > ancestorRect.right))
+          || (clipsY && (rect.top < ancestorRect.top || rect.bottom > ancestorRect.bottom))) {
+          return false;
+        }
+      }
+    }
+
+    // Fixed/sticky headers are not ancestors, so geometry alone cannot reveal
+    // that they cover the target. Inspect a few inset points and ignore the
+    // product-tour overlay itself.
+    if (typeof this.document?.elementsFromPoint === "function" && rect.width > 0 && rect.height > 0) {
+      const insetX = Math.min(2, rect.width / 2);
+      const insetY = Math.min(2, rect.height / 2);
+      const points = [
+        [rect.left + insetX, rect.top + insetY],
+        [rect.right - insetX, rect.top + insetY],
+        [rect.left + rect.width / 2, rect.top + rect.height / 2],
+        [rect.left + insetX, rect.bottom - insetY],
+        [rect.right - insetX, rect.bottom - insetY]
+      ];
+      for (const [x, y] of points) {
+        const hit = this.document.elementsFromPoint(x, y)
+          .find((element) => !this.root?.contains?.(element));
+        if (hit && !target.contains?.(hit) && !hit.contains?.(target)) return false;
+      }
+    }
+
+    return true;
+  }
+
+  _nextFrame() {
+    return new Promise((resolve) => {
+      if (typeof this.window.requestAnimationFrame === "function") {
+        this.window.requestAnimationFrame(() => resolve());
+      } else {
+        this.window.setTimeout(resolve, 0);
+      }
+    });
+  }
+
+  _waitForTargetToSettle(target, runId) {
+    return new Promise((resolve) => {
+      const requestFrame = typeof this.window.requestAnimationFrame === "function"
+        ? this.window.requestAnimationFrame.bind(this.window)
+        : (callback) => this.window.setTimeout(callback, 16);
+      const startedAt = Date.now();
+      let lastMovementAt = startedAt;
+      let previousRect = target.getBoundingClientRect();
+      let moved = false;
+
+      const check = () => {
+        if (runId !== this.runId || !this.isActive) return resolve();
+        const now = Date.now();
+        const rect = target.getBoundingClientRect();
+        const changed = Math.abs(rect.top - previousRect.top) > 0.5
+          || Math.abs(rect.left - previousRect.left) > 0.5;
+        if (changed) {
+          moved = true;
+          lastMovementAt = now;
+          previousRect = rect;
+        }
+
+        // Wait until animation has actually stopped. The old fixed 700 ms
+        // limit could reveal the next tooltip in the middle of a long scroll.
+        if ((moved && now - lastMovementAt >= 120)
+          || (!moved && now - startedAt >= 250)
+          || now - startedAt >= 3000) {
+          resolve();
+          return;
+        }
+        requestFrame(check);
       };
-      const onScroll = () => {
-        if (runId !== this.runId) return finish();
-        clearTimeout(settledTimer);
-        settledTimer = setTimeout(finish, 90);
-      };
-      this.window.addEventListener("scroll", onScroll, true);
-      settledTimer = setTimeout(finish, 180);
-      const maxTimer = setTimeout(finish, 700);
+
+      requestFrame(check);
     });
   }
 

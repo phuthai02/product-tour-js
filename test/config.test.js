@@ -215,6 +215,78 @@ test("fully visible targets do not trigger scrolling or hide the popover", async
   assert.equal(scrolled, false);
 });
 
+test("targets covered by fixed UI are scrolled even when their rectangle fits the viewport", async () => {
+  let scrolled = false;
+  const fixedHeader = { contains: () => false };
+  const target = {
+    contains: () => false,
+    parentElement: null,
+    getBoundingClientRect: () => ({
+      top: 10, left: 20, right: 300, bottom: 200, width: 280, height: 190
+    }),
+    scrollIntoView() { scrolled = true; }
+  };
+  const tour = new ProductTour(
+    { scrollBehavior: "auto", steps: [{ target: "#create", title: "Create" }] },
+    {
+      document: { elementsFromPoint: () => [fixedHeader] },
+      window: {
+        innerWidth: 1000,
+        innerHeight: 700,
+        matchMedia: () => ({ matches: false }),
+        requestAnimationFrame(callback) { callback(); }
+      }
+    }
+  );
+  tour.root = {
+    dataset: {},
+    contains: () => false,
+    querySelector: () => ({ classList: { add() {} } })
+  };
+
+  await tour._settleTarget(target, tour.runId);
+
+  assert.equal(scrolled, true);
+});
+
+test("page scroll lock is released while moving a clipped target and restored afterwards", async () => {
+  const changes = [];
+  const tour = new ProductTour(
+    { scrollBehavior: "auto", steps: [{ target: "#create", title: "Create" }] },
+    {
+      window: {
+        innerWidth: 1000,
+        innerHeight: 700,
+        matchMedia: () => ({ matches: false }),
+        requestAnimationFrame(callback) { callback(); }
+      }
+    }
+  );
+  tour.state = "active";
+  tour.scrollLocked = true;
+  tour.root = {
+    dataset: {},
+    querySelector: () => ({ classList: { add() {} } })
+  };
+  tour._unlockPageScroll = () => {
+    changes.push("unlock");
+    tour.scrollLocked = false;
+  };
+  tour._lockPageScroll = () => {
+    changes.push("lock");
+    tour.scrollLocked = true;
+  };
+  const target = {
+    getBoundingClientRect: () => ({ top: -20, left: 100, right: 300, bottom: 80 }),
+    scrollIntoView() { changes.push("scroll"); }
+  };
+
+  await tour._settleTarget(target, tour.runId);
+
+  assert.deepEqual(changes, ["unlock", "scroll", "lock"]);
+  assert.equal(tour.scrollLocked, true);
+});
+
 test("background scrolling is blocked while popover scrolling stays available", () => {
   const popoverContent = {};
   const popover = { contains: (target) => target === popoverContent };
