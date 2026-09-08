@@ -1626,6 +1626,34 @@ npm publish
 
 Hook `prepack` tự chạy test, build và kiểm tra bundle trước khi đóng gói. Tăng `version` trong `package.json` trước khi publish phiên bản mới.
 
+### Tự động publish npm khi push GitHub
+
+Repository có workflow [`.github/workflows/publish.yml`](./.github/workflows/publish.yml). Khi có commit mới trên `main`, workflow sẽ:
+
+1. Cài dependency bằng `npm ci`.
+2. Chạy toàn bộ `npm run validate`.
+3. Đọc `name` và `version` trong `package.json`.
+4. Bỏ qua publish nếu version đã tồn tại trên npm.
+5. Publish kèm provenance nếu đây là version mới.
+
+Để workflow được quyền publish mà không lưu token dài hạn, cấu hình npm Trusted Publisher cho package:
+
+| Field | Giá trị |
+| --- | --- |
+| Provider | GitHub Actions |
+| Organization/User | `phuthai02` |
+| Repository | `product-tour-js` |
+| Workflow filename | `publish.yml` |
+
+Sau khi cấu hình một lần, mỗi bản phát hành chỉ cần tăng version rồi push:
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+npm không cho ghi đè version đã publish. Nếu không tăng version, workflow vẫn chạy validate nhưng sẽ bỏ qua bước publish.
+
 ## Xử lý lỗi thường gặp
 
 ### Tour không hiện
