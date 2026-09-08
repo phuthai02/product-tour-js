@@ -1259,6 +1259,8 @@ bootstrapApplication(MainComponent, {
 
 `@angular/core` và `@ngx-translate/core` là optional peer dependencies. React, Vue và JavaScript thuần không tải hay phụ thuộc các Angular entry này.
 
+Angular adapter có type fallback cho cả `moduleResolution: "node"`. Application không cần đổi sang `moduleResolution: "bundler"` chỉ để import các subpath của package.
+
 ### React, Vue và JavaScript thuần
 
 Tạo singleton một lần trong `product-tours.ts`:
@@ -1749,6 +1751,7 @@ Target render động được chờ tối đa `targetTimeout`. `watchRoutes` ch
 - Nhánh `main` là tài liệu và source mới nhất.
 - Từ npm `0.4.0`, package có `ProductTourService` framework-neutral và option `scrollBehavior`.
 - Từ npm `0.4.2`, package có Angular adapter `product-tour-js/angular` và `product-tour-js/angular/ngx-translate`.
+- Từ npm `0.4.3`, Angular subpath có type fallback cho TypeScript dùng `moduleResolution: "node"`.
 - Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License

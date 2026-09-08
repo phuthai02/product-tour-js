@@ -1,6 +1,6 @@
 {
   "name": "product-tour-js",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A small, framework-agnostic product tour library configured with JSON.",
   "repository": {
     "type": "git",
@@ -14,6 +14,19 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "angular": [
+        "dist/angular.d.ts"
+      ],
+      "angular/ngx-translate": [
+        "dist/angular-ngx-translate.d.ts"
+      ],
+      "*": [
+        "dist/index.d.ts"
+      ]
+    }
+  },
   "unpkg": "./dist/product-tour.min.js",
   "jsdelivr": "./dist/product-tour.min.js",
   "exports": {
