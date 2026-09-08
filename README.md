@@ -1208,43 +1208,31 @@ Hook `translate` có thể trả về string hoặc Promise. Hook `onLanguageCha
 
 ### Angular với ngx-translate
 
-Đăng ký service một lần trong `bootstrap.ts` hoặc application config. Không cần tự viết lại class quản lý manager:
+Package cung cấp adapter riêng tại `product-tour-js/angular/ngx-translate`. Đăng ký một lần trong `bootstrap.ts` hoặc application config; adapter tự inject `TranslateService`, dịch chuỗi `i18n:`, theo dõi đổi ngôn ngữ và khởi tạo manager:
 
 ```ts
-import { ENVIRONMENT_INITIALIZER, inject } from "@angular/core";
-import { TranslateService } from "@ngx-translate/core";
-import { ProductTourService, createProductTourService } from "product-tour-js";
-import { firstValueFrom } from "rxjs";
+import { provideProductTourNgxTranslate } from "product-tour-js/angular/ngx-translate";
 
 bootstrapApplication(MainComponent, {
   providers: [
-    {
-      provide: ProductTourService,
-      useFactory: () => {
-        const translate = inject(TranslateService);
-        return createProductTourService({
-          source: "/content/product-tours/product-tour.json",
-          translate: (key) => firstValueFrom(translate.get(key)),
-          onLanguageChange: (reload) => translate.onLangChange.subscribe(reload)
-        });
-      }
-    },
-    {
-      provide: ENVIRONMENT_INITIALIZER,
-      multi: true,
-      useValue: () => {
-        void inject(ProductTourService).initialize();
-      }
-    }
+    provideProductTourNgxTranslate({
+      source: "/content/product-tours/product-tour.json"
+    })
   ]
 });
 ```
 
-Trong bất kỳ component hoặc service nào:
+Nếu đặt manifest tại URL mặc định `/product-tour.json`, chỉ cần:
+
+```ts
+providers: [provideProductTourNgxTranslate()]
+```
+
+Trong bất kỳ component hoặc service nào, inject service từ Angular entry. Không cần thêm tour vào `imports` của `@Component`:
 
 ```ts
 import { inject } from "@angular/core";
-import { ProductTourService } from "product-tour-js";
+import { ProductTourService } from "product-tour-js/angular";
 
 export class BookingComponent {
   private readonly productTours = inject(ProductTourService);
@@ -1254,6 +1242,22 @@ export class BookingComponent {
   }
 }
 ```
+
+Nếu Angular không dùng ngx-translate, dùng adapter cơ bản:
+
+```ts
+import { provideProductTour } from "product-tour-js/angular";
+
+bootstrapApplication(MainComponent, {
+  providers: [
+    provideProductTour({
+      source: "/product-tour.json"
+    })
+  ]
+});
+```
+
+`@angular/core` và `@ngx-translate/core` là optional peer dependencies. React, Vue và JavaScript thuần không tải hay phụ thuộc các Angular entry này.
 
 ### React, Vue và JavaScript thuần
 
@@ -1744,6 +1748,7 @@ Target render động được chờ tối đa `targetTimeout`. `watchRoutes` ch
 - Badge npm ở đầu README phản ánh version và lượt tải hiện tại trên registry.
 - Nhánh `main` là tài liệu và source mới nhất.
 - Từ npm `0.4.0`, package có `ProductTourService` framework-neutral và option `scrollBehavior`.
+- Từ npm `0.4.2`, package có Angular adapter `product-tour-js/angular` và `product-tour-js/angular/ngx-translate`.
 - Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License

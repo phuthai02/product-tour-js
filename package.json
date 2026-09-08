@@ -1,6 +1,6 @@
 {
   "name": "product-tour-js",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A small, framework-agnostic product tour library configured with JSON.",
   "repository": {
     "type": "git",
@@ -22,6 +22,18 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
+    },
+    "./angular": {
+      "types": "./dist/angular.d.ts",
+      "import": "./dist/angular.js",
+      "require": "./dist/angular.cjs",
+      "default": "./dist/angular.js"
+    },
+    "./angular/ngx-translate": {
+      "types": "./dist/angular-ngx-translate.d.ts",
+      "import": "./dist/angular-ngx-translate.js",
+      "require": "./dist/angular-ngx-translate.cjs",
+      "default": "./dist/angular-ngx-translate.js"
     },
     "./schema": "./product-tour.schema.json"
   },
@@ -53,6 +65,18 @@
     "node": ">=18"
   },
   "sideEffects": false,
+  "peerDependencies": {
+    "@angular/core": ">=16",
+    "@ngx-translate/core": ">=15"
+  },
+  "peerDependenciesMeta": {
+    "@angular/core": {
+      "optional": true
+    },
+    "@ngx-translate/core": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "esbuild": "^0.28.2"
   }

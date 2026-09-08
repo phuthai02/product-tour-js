@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,18 @@ assert.equal(
   "function",
   "IIFE bundle must expose ProductTourJS.initProductTour"
 );
+
+for (const file of [
+  "angular.js",
+  "angular.cjs",
+  "angular.d.ts",
+  "angular-ngx-translate.js",
+  "angular-ngx-translate.cjs",
+  "angular-ngx-translate.d.ts"
+]) {
+  const info = await stat(resolve(projectRoot, "dist", file));
+  assert(info.size > 0, `${file} must be included in the package build`);
+}
 assert.equal(
   typeof browserContext.ProductTourJS?.initProductTours,
   "function",
