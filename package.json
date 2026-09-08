@@ -1,6 +1,6 @@
 {
   "name": "product-tour-js",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A small, framework-agnostic product tour library configured with JSON.",
   "repository": {
     "type": "git",

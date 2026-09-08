@@ -3,6 +3,7 @@ import { PRODUCT_TOUR_STYLES } from "./styles.js";
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
+const scrollLocks = new WeakMap();
 let instanceCount = 0;
 
 function format(template, values) {
@@ -38,6 +39,7 @@ export class ProductTour {
     this.popoverAnimation = null;
 
     this._onKeyDown = this._onKeyDown.bind(this);
+    this._onScrollAttempt = this._onScrollAttempt.bind(this);
     this._onViewportChange = this._onViewportChange.bind(this);
     this._onTargetClick = this._onTargetClick.bind(this);
   }
@@ -263,17 +265,17 @@ export class ProductTour {
       <div class="pt-backdrop" data-panel="bottom"></div>
       <div class="pt-target-blocker" hidden></div>
       <div class="pt-spotlight" aria-hidden="true"></div>
-      <section class="pt-popover" role="dialog" aria-modal="true" aria-labelledby="${titleId}" aria-describedby="${contentId}" tabindex="-1">
+      <section class="pt-popover pt-popover--hidden" role="dialog" aria-modal="true" aria-labelledby="${titleId}" aria-describedby="${contentId}" tabindex="-1">
         <button class="pt-close" type="button" data-action="close"></button>
         <div class="pt-progress pt-progress--top" data-progress-area="top" aria-live="polite" hidden></div>
         <h2 class="pt-title" id="${titleId}"></h2>
         <div class="pt-content" id="${contentId}"></div>
         <form class="pt-form" novalidate hidden></form>
         <div class="pt-error" role="alert" aria-live="polite"></div>
-        <div class="pt-progress pt-progress--bottom" data-progress-area="bottom" aria-live="polite" hidden></div>
         <div class="pt-footer">
           <div class="pt-actions"></div>
         </div>
+        <div class="pt-progress pt-progress--bottom" data-progress-area="bottom" aria-live="polite" hidden></div>
       </section>`;
 
     const closeButton = root.querySelector('[data-action="close"]');
@@ -292,7 +294,10 @@ export class ProductTour {
 
     this.root = root;
     this.document.body.append(root);
+    this._lockPageScroll();
     this.document.addEventListener("keydown", this._onKeyDown, true);
+    this.window.addEventListener("wheel", this._onScrollAttempt, { capture: true, passive: false });
+    this.window.addEventListener("touchmove", this._onScrollAttempt, { capture: true, passive: false });
     this.window.addEventListener("resize", this._onViewportChange);
     this.window.addEventListener("scroll", this._onViewportChange, true);
   }
@@ -323,6 +328,7 @@ export class ProductTour {
 
     if (target && step.nextOnTargetClick) target.addEventListener("click", this._onTargetClick);
     this._position(step, target);
+    popover.classList.remove("pt-popover--hidden");
     this._animatePopover(popover, previousRect);
     popover.focus({ preventScroll: true });
     this._emit("step", { step, index, target, answers: this.getAnswers() });
@@ -507,6 +513,7 @@ export class ProductTour {
       button.className = action.variant === "link"
         ? "pt-action pt-action--link"
         : `pt-action pt-action--${action.variant}`;
+      if (action.action === "dismiss") button.classList.add("pt-action--dismiss");
       button.textContent = action.label || this._defaultActionLabel(action.action);
       button.dataset.tourAction = action.id;
       button.addEventListener("click", () => this._runAction(action));
@@ -591,9 +598,13 @@ export class ProductTour {
   async _settleTarget(target, runId) {
     if (typeof target.scrollIntoView !== "function") return;
     const rect = target.getBoundingClientRect();
-    const outsideViewport = rect.bottom < 0 || rect.top > this.window.innerHeight
-      || rect.right < 0 || rect.left > this.window.innerWidth;
-    if (!outsideViewport) return;
+    const fullyVisible = rect.top >= 0 && rect.left >= 0
+      && rect.bottom <= this.window.innerHeight && rect.right <= this.window.innerWidth;
+    if (fullyVisible) return;
+
+    // Keep the previous (or not-yet-rendered) tooltip out of view while the
+    // browser scrolls the target into its best possible visible position.
+    this.root?.querySelector(".pt-popover")?.classList.add("pt-popover--hidden");
 
     const reducedMotion = this.window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     target.scrollIntoView({
@@ -787,6 +798,39 @@ export class ProductTour {
     }
   }
 
+  _onScrollAttempt(event) {
+    if (!this.isActive) return;
+    const popover = this.root?.querySelector(".pt-popover");
+    if (popover?.contains(event.target)) return;
+    event.preventDefault();
+  }
+
+  _lockPageScroll() {
+    if (this.scrollLocked) return;
+    const element = this.document.documentElement;
+    const lock = scrollLocks.get(this.document) ?? {
+      count: 0,
+      hadClass: element.classList.contains("pt-scroll-locked")
+    };
+    lock.count += 1;
+    scrollLocks.set(this.document, lock);
+    element.classList.add("pt-scroll-locked");
+    this.scrollLocked = true;
+  }
+
+  _unlockPageScroll() {
+    if (!this.scrollLocked) return;
+    const lock = scrollLocks.get(this.document);
+    if (lock) {
+      lock.count -= 1;
+      if (lock.count <= 0) {
+        if (!lock.hadClass) this.document.documentElement.classList.remove("pt-scroll-locked");
+        scrollLocks.delete(this.document);
+      }
+    }
+    this.scrollLocked = false;
+  }
+
   _onViewportChange() {
     if (!this.isActive || this.currentIndex < 0) return;
     this._position(this.config.steps[this.currentIndex], this.currentTarget);
@@ -807,8 +851,11 @@ export class ProductTour {
     this.currentTarget = null;
     this.currentIndex = -1;
     this.document?.removeEventListener("keydown", this._onKeyDown, true);
+    this.window?.removeEventListener("wheel", this._onScrollAttempt, true);
+    this.window?.removeEventListener("touchmove", this._onScrollAttempt, true);
     this.window?.removeEventListener("resize", this._onViewportChange);
     this.window?.removeEventListener("scroll", this._onViewportChange, true);
+    this._unlockPageScroll();
     this.root?.remove();
     this.root = null;
     if (this.restoreFocusTo?.isConnected && typeof this.restoreFocusTo.focus === "function") {

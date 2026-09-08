@@ -153,6 +153,71 @@ test("step transitions animate the popover from its previous position and size",
   await animation.finished;
 });
 
+test("partially clipped targets are centered while the popover stays hidden", async () => {
+  const changes = [];
+  const popover = {
+    classList: {
+      add(name) { changes.push(`hide:${name}`); }
+    }
+  };
+  const tour = new ProductTour(
+    { steps: [{ target: "#create", title: "Create" }] },
+    {
+      window: {
+        innerWidth: 1000,
+        innerHeight: 700,
+        matchMedia: () => ({ matches: true }),
+        requestAnimationFrame(callback) { callback(); }
+      }
+    }
+  );
+  tour.root = { querySelector: () => popover };
+  const target = {
+    getBoundingClientRect: () => ({ top: -10, left: 100, right: 300, bottom: 90 }),
+    scrollIntoView(options) { changes.push({ scroll: options }); }
+  };
+
+  await tour._settleTarget(target, tour.runId);
+
+  assert.deepEqual(changes, [
+    "hide:pt-popover--hidden",
+    { scroll: { behavior: "auto", block: "center", inline: "center" } }
+  ]);
+});
+
+test("fully visible targets do not trigger scrolling or hide the popover", async () => {
+  let hidden = false;
+  let scrolled = false;
+  const tour = new ProductTour(
+    { steps: [{ target: "#create", title: "Create" }] },
+    { window: { innerWidth: 1000, innerHeight: 700 } }
+  );
+  tour.root = { querySelector: () => ({ classList: { add() { hidden = true; } } }) };
+  const target = {
+    getBoundingClientRect: () => ({ top: 10, left: 20, right: 300, bottom: 200 }),
+    scrollIntoView() { scrolled = true; }
+  };
+
+  await tour._settleTarget(target, tour.runId);
+
+  assert.equal(hidden, false);
+  assert.equal(scrolled, false);
+});
+
+test("background scrolling is blocked while popover scrolling stays available", () => {
+  const popoverContent = {};
+  const popover = { contains: (target) => target === popoverContent };
+  const tour = new ProductTour({ steps: [{ type: "modal", content: "Welcome" }] });
+  tour.state = "active";
+  tour.root = { querySelector: () => popover };
+  let prevented = 0;
+
+  tour._onScrollAttempt({ target: {}, preventDefault() { prevented += 1; } });
+  tour._onScrollAttempt({ target: popoverContent, preventDefault() { prevented += 1; } });
+
+  assert.equal(prevented, 1);
+});
+
 test("invalid configurations return useful errors", () => {
   assert.throws(() => defineTourConfig({ steps: [] }), /non-empty array/);
   assert.throws(

@@ -256,6 +256,10 @@ Các giá trị `placement`:
 
 Nếu vị trí chỉ định không đủ chỗ, thư viện có thể chọn phía phù hợp hơn để popover không tràn viewport.
 
+Khi target bị khuất một phần hoặc nằm ngoài viewport, thư viện tự cuộn target vào vùng nhìn thấy tốt nhất có thể. Trong lúc cuộn, tooltip hiện tại được ẩn và tooltip của step mới chỉ xuất hiện sau khi thao tác cuộn đã ổn định. Chuyển động cuộn tự động tôn trọng thiết lập `prefers-reduced-motion` của user.
+
+Trong khi tour đang mở, trang và vùng target được khóa cuộn bằng chuột hoặc thao tác chạm để spotlight không bị lệch ngoài ý muốn. Nội dung bên trong popover vẫn cuộn được nếu dài hơn chiều cao khả dụng.
+
 `allowInteraction: true` cho phép user click vào target đang được spotlight. Đặt thành `false` để chặn tương tác với target trong step đó.
 
 Tự chuyển step khi user click target:

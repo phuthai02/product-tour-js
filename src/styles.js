@@ -1,11 +1,13 @@
 export const PRODUCT_TOUR_STYLES = `
 .pt-root, .pt-root * { box-sizing: border-box; }
+.pt-scroll-locked, .pt-scroll-locked body { overflow: hidden !important; overscroll-behavior: none; }
 .pt-root { --pt-accent: #2563eb; --pt-overlay: rgba(15,23,42,.68); --pt-radius: 12px; --pt-z: 2147483000; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .pt-backdrop { position: fixed; background: transparent; z-index: var(--pt-z); pointer-events: auto; }
 .pt-target-blocker { position: fixed; z-index: calc(var(--pt-z) + 1); background: transparent; }
 .pt-spotlight { position: fixed; z-index: calc(var(--pt-z) + 1); pointer-events: none; border: 2px solid color-mix(in srgb, var(--pt-accent) 72%, white); border-radius: var(--pt-radius); background: transparent; box-shadow: 0 0 0 100vmax var(--pt-overlay), 0 0 0 3px color-mix(in srgb, var(--pt-accent) 20%, transparent); transition: top .22s cubic-bezier(.22,1,.36,1), left .22s cubic-bezier(.22,1,.36,1), width .22s cubic-bezier(.22,1,.36,1), height .22s cubic-bezier(.22,1,.36,1), border-color .12s ease; }
 .pt-spotlight[data-has-target="false"] { border-color: transparent; border-radius: 999px; background: var(--pt-overlay); box-shadow: 0 0 0 100vmax var(--pt-overlay); }
 .pt-popover { position: fixed; z-index: calc(var(--pt-z) + 2); width: min(360px, calc(100vw - 24px)); max-height: min(640px, calc(100vh - 24px)); overflow: auto; padding: 20px; color: #172033; background: #fff; border: 1px solid rgba(15,23,42,.10); border-radius: var(--pt-radius); box-shadow: 0 18px 50px rgba(15,23,42,.24); outline: none; }
+.pt-popover--hidden { visibility: hidden; }
 .pt-root[data-step-type="modal"] .pt-popover { width: min(480px, calc(100vw - 24px)); padding: 26px; }
 .pt-root[data-step-type="question"] .pt-popover { width: min(540px, calc(100vw - 24px)); padding: 26px; }
 .pt-root[data-step-type="modal"] .pt-popover,
@@ -34,7 +36,7 @@ export const PRODUCT_TOUR_STYLES = `
 .pt-error:empty { display: none; }
 .pt-progress { display: flex; width: 100%; align-items: center; color: #64748b; font-size: 12px; line-height: 1; white-space: nowrap; }
 .pt-progress[hidden] { display: none; }
-.pt-progress--top { width: calc(100% - 36px); margin: 0 36px 15px 0; }
+.pt-progress--top { width: 100%; margin: 0 0 15px; }
 .pt-progress--bottom { margin-top: 18px; }
 .pt-progress[data-progress-align="left"] { justify-content: flex-start; text-align: left; }
 .pt-progress[data-progress-align="center"] { justify-content: center; text-align: center; }
@@ -48,7 +50,8 @@ export const PRODUCT_TOUR_STYLES = `
 .pt-progress-bar__segment--complete { background: color-mix(in srgb, var(--pt-accent) 48%, #cbd5e1); }
 .pt-progress-bar__segment--current { background: var(--pt-accent); }
 .pt-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-.pt-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.pt-actions { display: flex; width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.pt-action--dismiss { margin-right: auto; }
 .pt-action { min-height: 36px; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; background: #fff; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .pt-action:hover, .pt-action:focus-visible { background: #f8fafc; border-color: #94a3b8; }
 .pt-action--primary { color: #fff; background: var(--pt-accent); border-color: var(--pt-accent); }
