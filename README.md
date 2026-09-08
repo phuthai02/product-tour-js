@@ -1,8 +1,14 @@
 # product-tour-js
 
+[![npm version](https://img.shields.io/npm/v/product-tour-js.svg)](https://www.npmjs.com/package/product-tour-js)
+[![npm downloads](https://img.shields.io/npm/dw/product-tour-js.svg)](https://www.npmjs.com/package/product-tour-js)
+[![license](https://img.shields.io/npm/l/product-tour-js.svg)](./LICENSE)
+
 Thư viện product tour viết bằng JavaScript thuần, không phụ thuộc framework và cấu hình bằng JSON. Một tour có thể kết hợp modal chào mừng, tooltip trỏ vào phần tử, câu hỏi, rẽ nhánh theo câu trả lời, nhiều page và nhiều file JSON.
 
 Package hỗ trợ ESM, CommonJS, browser bundle và TypeScript.
+
+Các badge npm ở trên lấy dữ liệu trực tiếp từ registry. README trên nhánh `main` mô tả code mới nhất trong repository; xem mục [Trạng thái phiên bản](#trạng-thái-phiên-bản) để phân biệt với bản npm đang phát hành.
 
 ## Mục lục
 
@@ -20,12 +26,14 @@ Package hỗ trợ ESM, CommonJS, browser bundle và TypeScript.
 - [Nhiều page trong một ứng dụng](#nhiều-page-trong-một-ứng-dụng)
 - [Tách cấu hình thành nhiều file JSON](#tách-cấu-hình-thành-nhiều-file-json)
 - [Gửi kết quả về API](#gửi-kết-quả-về-api)
+- [Dùng chung trong mọi framework](#dùng-chung-trong-mọi-framework)
 - [JavaScript API](#javascript-api)
 - [Bảng cấu hình đầy đủ](#bảng-cấu-hình-đầy-đủ)
 - [JSON Schema](#json-schema)
 - [Bàn phím và accessibility](#bàn-phím-và-accessibility)
 - [Chạy demo, test package và publish npm](#chạy-demo-test-package-và-publish-npm)
 - [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
+- [Trạng thái phiên bản](#trạng-thái-phiên-bản)
 
 ## Tính năng chính
 
@@ -38,6 +46,9 @@ Package hỗ trợ ESM, CommonJS, browser bundle và TypeScript.
 - Tiến độ dạng text, chấm tròn hoặc thanh ngang chia đoạn.
 - Mỗi route/page có tour riêng và có thể kế thừa cấu hình chung.
 - Theo dõi route của SPA khi bật `watchRoutes`.
+- Tự đưa target bị khuất vào viewport; có thể chọn cuộn `smooth` hoặc `auto`.
+- Ẩn tooltip và spotlight cũ trong khi auto-scroll, đồng thời khóa cuộn nền.
+- `ProductTourService` quản lý manifest, cache-bust và i18n cho mọi framework.
 - Ghi nhớ trạng thái hoàn tất bằng `localStorage` hoặc `sessionStorage`.
 - Trả kết quả qua callback, API của instance và DOM event.
 - Tự chèn CSS khi tour chạy, không cần import thêm file CSS.
@@ -91,7 +102,7 @@ const answers: TourAnswers = tour.getAnswers();
 ### Browser bundle/CDN
 
 ```html
-<script src="https://unpkg.com/product-tour-js@0.3.0/dist/product-tour.min.js"></script>
+<script src="https://unpkg.com/product-tour-js@latest/dist/product-tour.min.js"></script>
 <script>
   ProductTourJS.initProductTour("/product-tour.json");
 </script>
@@ -117,6 +128,7 @@ Với Vite, React, Vue hoặc ứng dụng có thư mục `public`, đặt file 
   "version": 1,
   "autoStart": true,
   "showOnce": true,
+  "scrollBehavior": "smooth",
   "labels": {
     "next": "Tiếp",
     "previous": "Quay lại",
@@ -206,6 +218,7 @@ Khả năng import JSON phụ thuộc bundler và cấu hình của project. Cá
 | Chỉ tải và nối manifest nhiều page | `loadTourManifest` |
 | Chuẩn hóa object một tour | `defineTourConfig` |
 | Chuẩn hóa object nhiều page | `defineTourManifest` |
+| Dùng lại lifecycle, reload và i18n trong mọi framework | `createProductTourService` |
 
 ## Các loại step
 
@@ -951,7 +964,7 @@ Khi route thay đổi, manager dừng tour của page cũ và tìm tour khớp p
 
 ### Kế thừa cấu hình
 
-Các option chung như `version`, `showOnce`, `storage`, `labels`, `theme`, `progress` và `showCloseButton` được kế thừa từ manifest xuống page. Page có thể override giá trị riêng.
+Các option chung như `version`, `showOnce`, `storage`, `scrollBehavior`, `labels`, `theme`, `progress` và `showCloseButton` được kế thừa từ manifest xuống page. Page có thể override giá trị riêng.
 
 Mỗi page dùng completion key riêng dựa trên id `<manifest-id>:<page-id>`. Hoàn tất tour Dashboard không làm mất tour Settings.
 
@@ -1201,6 +1214,7 @@ Hook `translate` có thể trả về string hoặc Promise. Hook `onLanguageCha
 import { ENVIRONMENT_INITIALIZER, inject } from "@angular/core";
 import { TranslateService } from "@ngx-translate/core";
 import { ProductTourService, createProductTourService } from "product-tour-js";
+import { firstValueFrom } from "rxjs";
 
 bootstrapApplication(MainComponent, {
   providers: [
@@ -1210,7 +1224,7 @@ bootstrapApplication(MainComponent, {
         const translate = inject(TranslateService);
         return createProductTourService({
           source: "/content/product-tours/product-tour.json",
-          translate: (key) => translate.instant(key),
+          translate: (key) => firstValueFrom(translate.get(key)),
           onLanguageChange: (reload) => translate.onLangChange.subscribe(reload)
         });
       }
@@ -1292,6 +1306,26 @@ Các method chính:
 | `startPage(pageId, options)` | Reload manifest và chạy page; mặc định `force: true` |
 | `reload(options)` | Hủy manager cũ, tải lại manifest và trả manager mới |
 | `destroy()` | Hủy subscription ngôn ngữ và manager |
+
+`startPage(pageId)` mặc định reload manifest với cache-bust và chạy tour bằng `force: true`. Có thể tái sử dụng manager hiện tại hoặc tôn trọng completion key:
+
+```js
+await productTours.startPage("booking", {
+  reload: false,
+  force: false
+});
+```
+
+Nếu `translate` không được truyền, chuỗi `i18n:...` được giữ nguyên. Nếu callback dịch trả Promise, service chờ hoàn tất toàn bộ bản dịch trước khi tạo manager.
+
+Lỗi từ `initialize()`, `getManager()`, `startPage()` và `reload()` được trả qua Promise. Riêng lỗi reload tự động do đổi ngôn ngữ được chuyển vào callback `onError`:
+
+```js
+const productTours = createProductTourService({
+  source: "/product-tour.json",
+  onError: (error) => console.error("Không thể reload product tour", error)
+});
+```
 
 ## JavaScript API
 
@@ -1375,6 +1409,18 @@ const manager = await initProductTours("/product-tour.json");
 | `manager.destroy()` | Hủy manager và tất cả instance |
 
 `startPage(pageId)` chỉ chọn tour của page, không điều hướng trình duyệt đến URL của page đó.
+
+### ProductTourService instance
+
+| Thuộc tính/phương thức | Kết quả |
+| --- | --- |
+| `service.initialize()` | Khởi tạo manager và listener đổi ngôn ngữ |
+| `service.getManager()` | Trả Promise của manager hiện tại |
+| `service.startPage(id, options)` | Chạy page; mặc định reload và force |
+| `service.reload(options)` | Tải lại manifest và thay manager |
+| `service.destroy()` | Hủy listener và manager |
+
+`createProductTourService(options)` là factory tương đương `new ProductTourService(options)`.
 
 ### Events
 
@@ -1502,6 +1548,8 @@ Việc kiểm tra schema trong editor không thay thế validation runtime. `def
 - Focus được trả lại phần tử trước đó khi tour đóng.
 - Progress có label dành cho screen reader.
 - Nếu user bật `prefers-reduced-motion`, các transition CSS được giảm.
+- Auto-scroll chuyển sang `behavior: "auto"` khi user bật `prefers-reduced-motion`.
+- Khi tour active, wheel/touch bên ngoài popover bị chặn; nội dung dài trong popover vẫn cuộn được.
 
 ## Chạy demo, test package và publish npm
 
@@ -1548,13 +1596,13 @@ npm pack
 Lệnh tạo file dạng:
 
 ```text
-product-tour-js-0.3.0.tgz
+product-tour-js-x.y.z.tgz
 ```
 
 Trong project cần test:
 
 ```bash
-npm install "C:\duong-dan\product-tour-js\product-tour-js-0.3.0.tgz"
+npm install "C:\duong-dan\product-tour-js\product-tour-js-x.y.z.tgz"
 ```
 
 Sau đó import bình thường:
@@ -1636,6 +1684,39 @@ Kiểm tra:
 ### Dùng với SPA
 
 Target render động được chờ tối đa `targetTimeout`. `watchRoutes` chỉ quan sát thay đổi URL; thư viện không điều hướng sang page khác. Sau một điều hướng do ứng dụng thực hiện, manager sẽ tự refresh nếu `watchRoutes` bật.
+
+### Auto-scroll quá chậm
+
+Đặt `scrollBehavior: "auto"` ở cấp tour, manifest hoặc page:
+
+```json
+{
+  "scrollBehavior": "auto",
+  "steps": [
+    { "target": "#result", "title": "Kết quả" }
+  ]
+}
+```
+
+`smooth` dùng animation do trình duyệt điều khiển nên không hỗ trợ duration cố định. `auto` cuộn ngay và tour chỉ chờ một frame trước khi hiển thị spotlight mới.
+
+### Translation key hiện nguyên dạng
+
+- Kiểm tra chuỗi JSON bắt đầu đúng prefix `i18n:`.
+- Đảm bảo đã truyền callback `translate` cho `ProductTourService`.
+- Với thư viện dịch tải dữ liệu bất đồng bộ, trả Promise từ callback `translate`.
+- Nếu dùng prefix khác, đặt `translationPrefix` tương ứng.
+
+### ProductTourService tải lại manifest mỗi lần startPage
+
+Đây là mặc định để nhận nội dung mới nhất. Dùng `startPage(pageId, { reload: false })` nếu muốn tái sử dụng manager đã tải. Có thể đặt `cacheBust: false` ở service hoặc trong `reload({ cacheBust: false })` nếu server đã có chiến lược cache riêng.
+
+## Trạng thái phiên bản
+
+- Badge npm ở đầu README phản ánh version và lượt tải hiện tại trên registry.
+- Nhánh `main` là tài liệu và source mới nhất.
+- npm `0.3.1` chưa có `ProductTourService` và option `scrollBehavior`; hai API này đang có trên `main` và cần một bản phát hành mới.
+- Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License
 
