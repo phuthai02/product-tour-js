@@ -24,10 +24,39 @@ test("defineTourConfig applies safe defaults", () => {
   assert.equal(config.allowHtml, false);
   assert.equal(config.scrollBehavior, "smooth");
   assert.equal(config.showCloseButton, true);
+  assert.equal(config.allowInteraction, true);
   assert.deepEqual(config.progress, { type: "text", position: "bottom-left" });
   assert.equal(config.steps[0].placement, "auto");
   assert.equal(config.steps[0].allowInteraction, true);
   assert.equal(config.steps[0].showCloseButton, true);
+});
+
+test("target interaction can be configured for the tour and overridden per step", () => {
+  const config = defineTourConfig({
+    allowInteraction: false,
+    steps: [
+      { target: "#blocked", title: "Blocked" },
+      { target: "#interactive", title: "Interactive", allowInteraction: true }
+    ]
+  });
+
+  assert.equal(config.steps[0].allowInteraction, false);
+  assert.equal(config.steps[1].allowInteraction, true);
+  assert.throws(
+    () => defineTourConfig({ allowInteraction: "yes", steps: [{ content: "Invalid" }] }),
+    /allowInteraction.*boolean/
+  );
+  assert.throws(
+    () => defineTourConfig({ steps: [{ content: "Invalid", allowInteraction: "yes" }] }),
+    /allowInteraction.*boolean/
+  );
+
+  const manifest = defineTourManifest({
+    allowInteraction: false,
+    pages: [{ id: "home", match: "/", steps: [{ target: "#blocked", title: "Blocked" }] }]
+  });
+  assert.equal(manifest.pages[0].config.allowInteraction, false);
+  assert.equal(manifest.pages[0].config.steps[0].allowInteraction, false);
 });
 
 test("scroll behavior supports smooth and immediate target scrolling", () => {
@@ -456,6 +485,7 @@ test("framework-neutral service localizes manifests and owns language subscripti
       ]
     },
     autoStart: false,
+    reloadOnLanguageChange: true,
     translate: async (key) => ({ "tour.title": "Welcome" })[key],
     onLanguageChange(listener) {
       languageListener = listener;
@@ -469,4 +499,22 @@ test("framework-neutral service localizes manifests and owns language subscripti
   assert.equal(manager.getTour("home").config.steps[0].title, "Welcome");
   service.destroy();
   assert.equal(unsubscribed, true);
+});
+
+test("framework-neutral service does not subscribe to language changes by default", async () => {
+  let subscribed = false;
+  const service = createProductTourService({
+    source: {
+      autoStart: false,
+      pages: [{ id: "home", match: "/", steps: [{ type: "modal", content: "Welcome" }] }]
+    },
+    autoStart: false,
+    onLanguageChange() {
+      subscribed = true;
+    }
+  });
+
+  await service.initialize();
+  assert.equal(subscribed, false);
+  service.destroy();
 });

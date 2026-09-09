@@ -41,7 +41,7 @@ export class ProductTourService {
       autoStart: true,
       cacheBust: true,
       translationPrefix: "i18n:",
-      reloadOnLanguageChange: true,
+      reloadOnLanguageChange: false,
       ...options
     };
     this.managerPromise = null;

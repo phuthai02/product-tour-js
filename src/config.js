@@ -15,7 +15,7 @@ const PROGRESS_POSITIONS = new Set([
 const TOUR_OPTION_KEYS = [
   "version", "autoStart", "showOnce", "markOnDismiss", "storage", "storageKey",
   "startDelay", "targetTimeout", "scrollBehavior", "onMissingTarget", "closeOnEscape",
-  "closeOnOverlayClick", "showCloseButton", "allowHtml", "labels", "theme", "progress"
+  "closeOnOverlayClick", "showCloseButton", "allowInteraction", "allowHtml", "labels", "theme", "progress"
 ];
 
 export const DEFAULT_CONFIG = Object.freeze({
@@ -33,6 +33,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   closeOnEscape: true,
   closeOnOverlayClick: false,
   showCloseButton: true,
+  allowInteraction: true,
   allowHtml: false,
   progress: Object.freeze({
     type: "text",
@@ -178,7 +179,7 @@ function normalizeNext(next, stepIndex) {
   });
 }
 
-function normalizeStep(step, index, defaultProgress, defaultShowCloseButton) {
+function normalizeStep(step, index, defaultProgress, defaultShowCloseButton, defaultAllowInteraction) {
   assert(isPlainObject(step), `steps[${index}] must be an object.`);
   assert(
     step.target === undefined || step.target === null || typeof step.target === "string",
@@ -205,6 +206,14 @@ function normalizeStep(step, index, defaultProgress, defaultShowCloseButton) {
     step.showCloseButton === undefined || typeof step.showCloseButton === "boolean",
     `steps[${index}].showCloseButton must be a boolean.`
   );
+  assert(
+    step.allowInteraction === undefined || typeof step.allowInteraction === "boolean",
+    `steps[${index}].allowInteraction must be a boolean.`
+  );
+  assert(
+    step.nextOnTargetClick === undefined || typeof step.nextOnTargetClick === "boolean",
+    `steps[${index}].nextOnTargetClick must be a boolean.`
+  );
   assert(step.actions === undefined || step.actions === null || Array.isArray(step.actions), `steps[${index}].actions must be an array.`);
   const actions = step.actions === undefined || step.actions === null
     ? null
@@ -218,7 +227,7 @@ function normalizeStep(step, index, defaultProgress, defaultShowCloseButton) {
     title: step.title ?? "",
     content: step.content ?? "",
     placement,
-    allowInteraction: step.allowInteraction ?? true,
+    allowInteraction: step.allowInteraction ?? defaultAllowInteraction,
     nextOnTargetClick: step.nextOnTargetClick ?? false,
     showCloseButton: step.showCloseButton ?? defaultShowCloseButton,
     padding: finiteNonNegative(step.padding, 8, `steps[${index}].padding`),
@@ -259,13 +268,21 @@ export function defineTourConfig(input) {
   const onMissingTarget = input.onMissingTarget ?? DEFAULT_CONFIG.onMissingTarget;
   const scrollBehavior = input.scrollBehavior ?? DEFAULT_CONFIG.scrollBehavior;
   const showCloseButton = input.showCloseButton ?? DEFAULT_CONFIG.showCloseButton;
+  const allowInteraction = input.allowInteraction ?? DEFAULT_CONFIG.allowInteraction;
   assert(STORAGE_TYPES.has(storage), '"storage" must be "local", "session", or "none".');
   assert(MISSING_TARGET_BEHAVIORS.has(onMissingTarget), '"onMissingTarget" must be "skip" or "abort".');
   assert(SCROLL_BEHAVIORS.has(scrollBehavior), '"scrollBehavior" must be "auto" or "smooth".');
   assert(typeof showCloseButton === "boolean", '"showCloseButton" must be a boolean.');
+  assert(typeof allowInteraction === "boolean", '"allowInteraction" must be a boolean.');
 
   const progress = normalizeProgress(input.progress);
-  const steps = input.steps.map((step, index) => normalizeStep(step, index, progress, showCloseButton));
+  const steps = input.steps.map((step, index) => normalizeStep(
+    step,
+    index,
+    progress,
+    showCloseButton,
+    allowInteraction
+  ));
   validateStepReferences(steps);
   return {
     ...DEFAULT_CONFIG,
@@ -275,6 +292,7 @@ export function defineTourConfig(input) {
     onMissingTarget,
     scrollBehavior,
     showCloseButton,
+    allowInteraction,
     startDelay: finiteNonNegative(input.startDelay, DEFAULT_CONFIG.startDelay, "startDelay"),
     targetTimeout: finiteNonNegative(input.targetTimeout, DEFAULT_CONFIG.targetTimeout, "targetTimeout"),
     progress,

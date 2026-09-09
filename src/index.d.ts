@@ -88,6 +88,7 @@ export interface ProductTourConfig {
   closeOnEscape?: boolean;
   closeOnOverlayClick?: boolean;
   showCloseButton?: boolean;
+  allowInteraction?: boolean;
   allowHtml?: boolean;
   progress?: ProgressConfig;
   labels?: Partial<{

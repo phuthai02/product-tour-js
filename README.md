@@ -284,7 +284,7 @@ Mặc định tour cuộn mượt. Đặt `scrollBehavior: "auto"` ở cấp tou
 
 Trong khi tour đang mở, trang và vùng target được khóa cuộn bằng chuột hoặc thao tác chạm để spotlight không bị lệch ngoài ý muốn. Nội dung bên trong popover vẫn cuộn được nếu dài hơn chiều cao khả dụng.
 
-`allowInteraction: true` cho phép user click vào target đang được spotlight. Đặt thành `false` để chặn tương tác với target trong step đó.
+`allowInteraction: true` cho phép user click vào target đang được spotlight. Có thể đặt option này ở cấp tour để áp dụng mặc định cho mọi step, và override trong từng step khi cần. Đặt thành `false` để chặn tương tác với target.
 
 Tự chuyển step khi user click target:
 
@@ -964,7 +964,7 @@ Khi route thay đổi, manager dừng tour của page cũ và tìm tour khớp p
 
 ### Kế thừa cấu hình
 
-Các option chung như `version`, `showOnce`, `storage`, `scrollBehavior`, `labels`, `theme`, `progress` và `showCloseButton` được kế thừa từ manifest xuống page. Page có thể override giá trị riêng.
+Các option chung như `version`, `showOnce`, `storage`, `scrollBehavior`, `labels`, `theme`, `progress`, `showCloseButton` và `allowInteraction` được kế thừa từ manifest xuống page. Page có thể override giá trị riêng.
 
 Mỗi page dùng completion key riêng dựa trên id `<manifest-id>:<page-id>`. Hoàn tất tour Dashboard không làm mất tour Settings.
 
@@ -1300,7 +1300,7 @@ Các option của service:
 | `translationPrefix` | `i18n:` | Prefix nhận diện translation key |
 | `translate` | Không có | Hàm dịch key, sync hoặc async |
 | `onLanguageChange` | Không có | Đăng ký callback khi đổi ngôn ngữ |
-| `reloadOnLanguageChange` | `true` | Reload manager khi ngôn ngữ đổi |
+| `reloadOnLanguageChange` | `false` | Reload manager khi ngôn ngữ đổi |
 | `runtime` | `{}` | Các runtime option chuyển cho manager |
 
 Các method chính:
@@ -1476,6 +1476,7 @@ document.addEventListener("product-tour:complete", (event) => {
 | `closeOnEscape` | boolean | `true` | Cho phép Escape đóng tour |
 | `closeOnOverlayClick` | boolean | `false` | Cho phép click overlay đóng tour |
 | `showCloseButton` | boolean | `true` | Hiện nút `×`; step có thể override |
+| `allowInteraction` | boolean | `true` | Cho phép click target; step có thể override |
 | `allowHtml` | boolean | `false` | Render `content` bằng HTML |
 | `progress` | object | `text`, `bottom-left` | Kiểu và vị trí tiến độ |
 | `labels` | object | Tiếng Anh | Nhãn mặc định |
@@ -1753,6 +1754,7 @@ Target render động được chờ tối đa `targetTimeout`. `watchRoutes` ch
 - Từ npm `0.4.2`, package có Angular adapter `product-tour-js/angular` và `product-tour-js/angular/ngx-translate`.
 - Từ npm `0.4.3`, Angular subpath có type fallback cho TypeScript dùng `moduleResolution: "node"`.
 - Từ npm `0.4.4`, auto-scroll chờ target ổn định, xử lý nested scroll container và target bị fixed/sticky UI che trước khi hiện tooltip.
+- Từ npm `0.4.5`, có thể đặt `allowInteraction` ở cấp tour và `reloadOnLanguageChange` mặc định là `false`.
 - Để kiểm tra version thực tế đang cài: `npm ls product-tour-js`.
 
 ## License
