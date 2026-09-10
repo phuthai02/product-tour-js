@@ -1,8 +1,8 @@
 # Hướng dẫn tích hợp Product Tour cho các module Kyta
 
-Tài liệu này chuẩn hóa cách tích hợp `product-tour-js` cho các module frontend của hệ thống Kyta có cấu trúc Angular/JHipster tương tự `booking-gateway`.
+Tài liệu này chuẩn hóa cách tích hợp `product-tour-js` cho các module frontend Angular/JHipster trong hệ thống Kyta.
 
-Mẫu tham chiếu được lấy từ `booking-gateway`, nhánh `develop`:
+Quy ước tích hợp chung:
 
 - package: `product-tour-js@^0.4.5`;
 - đăng ký toàn ứng dụng trong `src/main/webapp/bootstrap.ts`;
@@ -25,8 +25,8 @@ src/main/webapp/
 │     ├─ product-tour.json          # Cấu hình chung và danh sách file page
 │     └─ pages/
 │        ├─ dashboard.json          # Tour của page dashboard
-│        ├─ booking-list.json       # Tour của page danh sách booking
-│        └─ booking-detail.json     # Tour của page chi tiết booking
+│        ├─ feature-list.json       # Tour của page danh sách
+│        └─ feature-detail.json     # Tour của page chi tiết
 ├─ app/
 │  └─ features/
 │     └─ <feature>/
@@ -43,8 +43,8 @@ Luồng tải cấu hình:
 bootstrap.ts
   -> content/product-tours/product-tour.json
       -> pages/dashboard.json
-      -> pages/booking-list.json
-      -> pages/booking-detail.json
+      -> pages/feature-list.json
+      -> pages/feature-detail.json
 ```
 
 Đường dẫn trong `include` được tính tương đối từ file đang chứa `include`.
@@ -74,12 +74,12 @@ Kiểm tra `package.json`:
 
 ## 3. Đảm bảo thư mục cấu hình được build thành static asset
 
-Trong `angular.json`, `src/main/webapp/content` phải nằm trong `build.options.assets`. `booking-gateway` đã cấu hình theo cách này:
+Trong `angular.json`, `src/main/webapp/content` phải nằm trong `build.options.assets`:
 
 ```jsonc
 {
   "projects": {
-    "gateway": {
+    "<project-name>": {
       "architect": {
         "build": {
           "options": {
@@ -117,14 +117,14 @@ bootstrapApplication(MainComponent, {
   providers: [
     provideProductTourNgxTranslate({
       // URL tương đối với base href của module.
-      // Ví dụ baseHref=/ebooking/ sẽ tải /ebooking/content/product-tours/product-tour.json.
+      // Ví dụ baseHref=/<module>/ sẽ tải /<module>/content/product-tours/product-tour.json.
       source: 'content/product-tours/product-tour.json',
     }),
   ],
 });
 ```
 
-Với Kyta triển khai nhiều module dưới các `baseHref` khác nhau, dùng URL tương đối `content/...` như `booking-gateway`. Không thêm `/` ở đầu đường dẫn. Theo quy ước Kyta, object truyền vào provider chỉ có duy nhất field `source`; mọi cấu hình được manifest hỗ trợ phải đặt trong JSON để các module có cùng một cách quản lý.
+Với Kyta triển khai nhiều module dưới các `baseHref` khác nhau, dùng URL tương đối `content/...`. Không thêm `/` ở đầu đường dẫn. Theo quy ước Kyta, object truyền vào provider chỉ có duy nhất field `source`; mọi cấu hình được manifest hỗ trợ phải đặt trong JSON để các module có cùng một cách quản lý.
 
 ## 5. Manifest chính `product-tour.json`
 
@@ -230,14 +230,14 @@ Template có chú thích cho từng cấu hình:
   // Danh sách file page; đường dẫn tương đối từ product-tour.json.
   "include": [
     "./pages/dashboard.json",
-    "./pages/booking-list.json"
+    "./pages/feature-list.json"
   ]
 }
 ```
 
 Quy ước cho Kyta:
 
-- `id` manifest: `<module-name>-product-tour`, ví dụ `ebooking-product-tour`;
+- `id` manifest: `<module-name>-product-tour`;
 - `storageKey`: dùng chung `kyta-product-tour` hoặc thêm tên module nếu cần tách biệt hoàn toàn;
 - tăng `version` khi nội dung hoặc thứ tự step thay đổi đáng kể;
 - dùng `onMissingTarget: "skip"` cho dashboard có nhiều khối render có điều kiện;
@@ -261,7 +261,7 @@ Ví dụ `pages/dashboard.json`:
 
   // Điều kiện route để manager tự nhận diện page hiện tại.
   "match": {
-    // Glob phù hợp với module có base path, ví dụ /ebooking/dashboard.
+    // Glob phù hợp với module có base path, ví dụ /<module>/dashboard.
     "path": "*/dashboard",
     // exact: khớp tuyệt đối; prefix: khớp phần đầu; glob: hỗ trợ wildcard *.
     "mode": "glob"
@@ -321,7 +321,7 @@ Page có thể override các cấu hình kế thừa từ manifest như `version
 
 ## 7. Đánh dấu target trong HTML
 
-Implementation của `booking-gateway` đang dùng các ID ổn định như:
+Có thể dùng các ID ổn định như:
 
 ```html
 <section id="dashboard-kpi-summary">
@@ -462,7 +462,7 @@ Adapter `provideProductTourNgxTranslate` bỏ prefix `i18n:` rồi gọi `Transl
 {
   "match": {
     // Path cần so khớp.
-    "path": "*/booking/*",
+    "path": "*/feature/*",
     // exact, prefix hoặc glob.
     "mode": "glob",
     // Tùy chọn: hash bắt buộc phải khớp.
@@ -531,7 +531,7 @@ Adapter `provideProductTourNgxTranslate` bỏ prefix `i18n:` rồi gọi `Transl
       // Phát custom event để application tự xử lý.
       "action": "emit",
       // Tên event được phát.
-      "event": "open-booking-detail",
+      "event": "open-feature-detail",
       "variant": "primary"
     }
   ]
@@ -568,7 +568,7 @@ Với action `goTo`, thêm `targetStep` là ID của step đích.
 ## 11. Quy tắc vận hành cho các module Kyta
 
 1. Mỗi page có một `page.id` duy nhất và một file riêng trong `pages/`.
-2. Tên file nên trùng `page.id`, dùng kebab-case: `booking-detail.json`.
+2. Tên file nên trùng `page.id`, dùng kebab-case: `feature-detail.json`.
 3. Ưu tiên selector `[data-tour="..."]`; không dùng class chỉ phục vụ style.
 4. Mọi `title`, `content`, label hiển thị cho người dùng nên dùng `i18n:`.
 5. Dùng `placement: "auto"` nếu layout thay đổi theo kích thước màn hình.
