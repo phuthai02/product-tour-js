@@ -57,7 +57,7 @@ Chạy tại thư mục frontend của module:
 npm install product-tour-js@^0.4.5
 ```
 
-Nếu module dùng adapter dịch `ngx-translate` giống `booking-gateway`, project cần có `@angular/core` và `@ngx-translate/core`. Hai package này thường đã có sẵn trong các module Angular của Kyta.
+Tất cả module Kyta đều sử dụng `ngx-translate`, vì vậy Product Tour luôn được tích hợp qua adapter `product-tour-js/angular/ngx-translate`. `@angular/core` và `@ngx-translate/core` đã có sẵn trong cấu trúc chuẩn của các module Kyta.
 
 Kiểm tra `package.json`:
 
@@ -108,7 +108,7 @@ Không thể truyền đường dẫn file trên máy như `C:\...\product-tour.
 
 ## 4. Đăng ký Product Tour một lần trong `bootstrap.ts`
 
-Module dùng `ngx-translate` nên đăng ký adapter sau:
+Mọi module Kyta đăng ký adapter `ngx-translate` một lần trong `bootstrap.ts`. Provider chỉ cần khai báo đường dẫn `source`; các cấu hình về hành vi, giao diện và nội dung được quản lý tập trung trong `product-tour.json`:
 
 ```ts
 import { provideProductTourNgxTranslate } from 'product-tour-js/angular/ngx-translate';
@@ -119,37 +119,12 @@ bootstrapApplication(MainComponent, {
       // URL tương đối với base href của module.
       // Ví dụ baseHref=/ebooking/ sẽ tải /ebooking/content/product-tours/product-tour.json.
       source: 'content/product-tours/product-tour.json',
-
-      // Tự khởi tạo manager khi application bootstrap.
-      autoStart: true,
-
-      // Khi startPage/reload, thêm cache-bust để nhận JSON mới nhất.
-      cacheBust: true,
-
-      // Chuỗi bắt đầu bằng prefix này được coi là key ngx-translate.
-      translationPrefix: 'i18n:',
-
-      // Reload nội dung tour khi người dùng đổi ngôn ngữ.
-      reloadOnLanguageChange: true,
-
-      // Nhận lỗi tải/parse manifest để log hoặc đưa vào hệ thống monitoring.
-      onError: error => console.error('Không thể khởi tạo Product Tour', error),
     }),
   ],
 });
 ```
 
-Với Kyta triển khai nhiều module dưới các `baseHref` khác nhau, nên dùng URL tương đối `content/...` như `booking-gateway`. Không thêm `/` ở đầu trừ khi file thực sự được phục vụ từ root của domain.
-
-Nếu module không dùng `ngx-translate`, dùng provider cơ bản:
-
-```ts
-import { provideProductTour } from 'product-tour-js/angular';
-
-provideProductTour({
-  source: 'content/product-tours/product-tour.json',
-});
-```
+Với Kyta triển khai nhiều module dưới các `baseHref` khác nhau, dùng URL tương đối `content/...` như `booking-gateway`. Không thêm `/` ở đầu đường dẫn. Theo quy ước Kyta, object truyền vào provider chỉ có duy nhất field `source`; mọi cấu hình được manifest hỗ trợ phải đặt trong JSON để các module có cùng một cách quản lý.
 
 ## 5. Manifest chính `product-tour.json`
 
@@ -477,7 +452,7 @@ i18n:<module>.tour.<page-id>.steps.<step-id>.title
 i18n:<module>.tour.<page-id>.steps.<step-id>.content
 ```
 
-Adapter `provideProductTourNgxTranslate` bỏ prefix `i18n:` rồi gọi `TranslateService` để lấy bản dịch.
+Adapter `provideProductTourNgxTranslate` bỏ prefix `i18n:` rồi gọi `TranslateService` để lấy bản dịch. Đây là adapter chuẩn và duy nhất được dùng cho các module Kyta.
 
 ## 10. Tham chiếu nhanh các cấu hình nâng cao
 
@@ -626,7 +601,7 @@ Với action `goTo`, thêm `targetStep` là ID của step đích.
 
 ### Hiển thị nguyên chuỗi `i18n:...`
 
-- Đảm bảo dùng `provideProductTourNgxTranslate`, không phải provider cơ bản.
+- Đảm bảo provider Kyta được import từ `product-tour-js/angular/ngx-translate` và chỉ khai báo đúng `source`.
 - Kiểm tra key tồn tại trong file ngôn ngữ đã được load.
 - Kiểm tra prefix là `i18n:`.
 
