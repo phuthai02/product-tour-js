@@ -41,10 +41,12 @@ Luồng tải cấu hình:
 
 ```text
 bootstrap.ts
-  -> content/product-tours/product-tour.json
-      -> pages/dashboard.json
-      -> pages/feature-list.json
-      -> pages/feature-detail.json
+  -> tải content/product-tours/product-tour.json
+
+content/product-tours/product-tour.json
+  -> include content/product-tours/pages/dashboard.json
+  -> include content/product-tours/pages/feature-list.json
+  -> include content/product-tours/pages/feature-detail.json
 ```
 
 Đường dẫn trong `include` được tính tương đối từ file đang chứa `include`.
