@@ -1,7 +1,5 @@
 {
   "$schema": "../product-tour.schema.json",
-  "id": "dynamic-onboarding",
-  "version": 2,
   "autoStart": true,
   "showOnce": true,
   "markOnDismiss": false,

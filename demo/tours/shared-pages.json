@@ -3,6 +3,7 @@
   "pages": [
     {
       "id": "home",
+      "version": 2,
       "match": "/demo/",
       "steps": [
         {
@@ -99,6 +100,7 @@
     },
     {
       "id": "settings",
+      "version": 1,
       "match": "/demo/settings",
       "theme": { "accentColor": "#0891b2" },
       "progress": { "type": "bar", "position": "top-center" },

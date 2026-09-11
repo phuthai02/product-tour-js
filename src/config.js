@@ -371,28 +371,36 @@ function inheritPageOptions(page, shared) {
 export function defineTourManifest(input) {
   assert(isPlainObject(input), "The multi-page configuration must be a JSON object.");
   assert(Array.isArray(input.pages) && input.pages.length > 0, '"pages" must be a non-empty array.');
-  const id = input.id ?? DEFAULT_CONFIG.id;
-  assert(typeof id === "string" && id.trim(), '"id" must be a non-empty string.');
+  assert(input.id === undefined, 'A multi-page manifest must not define "id"; use page.id instead.');
+  assert(input.version === undefined, 'A multi-page manifest must not define "version"; use page.version instead.');
   const shared = pickTourOptions(input);
+  delete shared.version;
   const pages = input.pages.map((page, index) => {
     assert(isPlainObject(page), `pages[${index}] must be an object.`);
     assert(typeof page.id === "string" && page.id.trim(), `pages[${index}].id must be a non-empty string.`);
     assert(page.match !== undefined, `pages[${index}].match is required.`);
     const pageOptions = pickTourOptions(page);
     const pageId = page.id.trim();
+    const pageVersion = page.version ?? page.config?.version;
+    assert(
+      ["string", "number"].includes(typeof pageVersion),
+      `pages[${index}].version must be a string or number.`
+    );
     const config = page.config
-      ? defineTourConfig(page.config)
+      ? defineTourConfig({ ...page.config, id: pageId, version: pageVersion })
       : defineTourConfig({
           ...shared,
           ...pageOptions,
           labels: { ...(shared.labels ?? {}), ...(pageOptions.labels ?? {}) },
           theme: { ...(shared.theme ?? {}), ...(pageOptions.theme ?? {}) },
           progress: mergeStructuredOption(shared.progress, pageOptions.progress),
-          id: `${id.trim()}:${pageId}`,
+          id: pageId,
+          version: pageVersion,
           steps: page.steps
         });
     return {
       id: pageId,
+      version: pageVersion,
       enabled: page.enabled ?? true,
       match: normalizePageMatch(page.match, index),
       config
@@ -400,8 +408,6 @@ export function defineTourManifest(input) {
   });
   assert(new Set(pages.map((page) => page.id)).size === pages.length, "Page ids must be unique.");
   return {
-    id: id.trim(),
-    version: input.version ?? DEFAULT_CONFIG.version,
     autoStart: input.autoStart ?? DEFAULT_CONFIG.autoStart,
     watchRoutes: input.watchRoutes ?? true,
     pages

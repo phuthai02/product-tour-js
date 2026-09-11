@@ -8,6 +8,16 @@
     { "required": ["pages"] },
     { "required": ["include"] }
   ],
+  "allOf": [
+    {
+      "if": { "anyOf": [{ "required": ["pages"] }, { "required": ["include"] }] },
+      "then": { "not": { "anyOf": [{ "required": ["id"] }, { "required": ["version"] }] } }
+    },
+    {
+      "if": { "required": ["match"] },
+      "then": { "required": ["id", "version"] }
+    }
+  ],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
@@ -215,7 +225,7 @@
     },
     "page": {
       "type": "object",
-      "required": ["id", "match", "steps"],
+      "required": ["id", "version", "match", "steps"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "minLength": 1 },

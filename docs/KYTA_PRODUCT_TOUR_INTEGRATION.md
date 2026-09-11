@@ -2,9 +2,101 @@
 
 Tài liệu này chuẩn hóa cách tích hợp `product-tour-js` cho các module frontend Angular/JHipster trong hệ thống Kyta.
 
+## Bắt đầu nhanh
+
+Phần này là cấu hình tối thiểu để Product Tour chạy được ngay. Ví dụ tạo tour cho page Dashboard tại route `/dashboard`.
+
+### Bước 1: Cài package
+
+```bash
+npm install product-tour-js@^0.4.6
+```
+
+### Bước 2: Đăng ký một lần trong `bootstrap.ts`
+
+```ts
+import { provideProductTourNgxTranslate } from 'product-tour-js/angular/ngx-translate';
+
+bootstrapApplication(MainComponent, {
+  providers: [
+    provideProductTourNgxTranslate({
+      source: 'content/product-tours/product-tour.json',
+    }),
+  ],
+});
+```
+
+Nếu `bootstrapApplication` đã có `providers`, chỉ thêm `provideProductTourNgxTranslate(...)` vào mảng hiện tại.
+
+### Bước 3: Tạo hai file JSON
+
+Tạo `src/main/webapp/content/product-tours/product-tour.json`:
+
+```json
+{
+  "include": ["./pages/dashboard.json"]
+}
+```
+
+Tạo `src/main/webapp/content/product-tours/pages/dashboard.json`:
+
+```json
+{
+  "id": "dashboard",
+  "version": 1,
+  "match": "*/dashboard",
+  "steps": [
+    {
+      "target": "[data-tour='dashboard-create']",
+      "title": "Tạo mới",
+      "content": "Bấm vào đây để tạo một bản ghi mới."
+    }
+  ]
+}
+```
+
+`id` và `version` nằm ở từng page, không đặt trong `product-tour.json`. Khi nội dung hướng dẫn của Dashboard thay đổi và cần hiển thị lại cho người đã xem, tăng `version` lên `2`.
+
+### Bước 4: Đánh dấu phần tử cần hướng dẫn
+
+Trong HTML của Dashboard, thêm `data-tour` đúng với `target` trong JSON:
+
+```html
+<button type="button" data-tour="dashboard-create">
+  Tạo mới
+</button>
+```
+
+Chạy ứng dụng và mở `/dashboard`. Tour sẽ tự xuất hiện; không cần thêm code vào component.
+
+### Kiểm tra nhanh
+
+- Mở trực tiếp `content/product-tours/product-tour.json` trên trình duyệt và chắc chắn nhận HTTP `200`.
+- Mở page Dashboard và kiểm tra nút có thuộc tính `data-tour="dashboard-create"`.
+- Nếu đã xem tour trước đó, tăng `version` trong `dashboard.json` để chạy lại.
+
+### Luồng hoạt động
+
+```mermaid
+flowchart LR
+    A[bootstrap.ts] -->|đọc source| B[product-tour.json]
+    B -->|include| C[pages/dashboard.json]
+    C -->|match route| D[Page Dashboard]
+    C -->|target data-tour| E[Nút Tạo mới]
+    D --> F[Hiển thị tour]
+    E --> F
+    F -->|hoàn tất| G[Lưu dashboard + version]
+```
+
+> Nếu làm theo bốn bước trên mà tour chưa chạy, xem mục **Xử lý sự cố** ở cuối tài liệu. Các phần bên dưới giải thích đầy đủ cấu hình, đa ngôn ngữ, nhiều page và cách gọi lại tour.
+
+---
+
+## Hướng dẫn chi tiết
+
 Quy ước tích hợp chung:
 
-- package: `product-tour-js@^0.4.5`;
+- package: `product-tour-js@^0.4.6`;
 - đăng ký toàn ứng dụng trong `src/main/webapp/bootstrap.ts`;
 - manifest chính: `src/main/webapp/content/product-tours/product-tour.json`;
 - tour riêng của từng page: `src/main/webapp/content/product-tours/pages/<page-id>.json`;
@@ -56,7 +148,7 @@ content/product-tours/product-tour.json
 Chạy tại thư mục frontend của module:
 
 ```bash
-npm install product-tour-js@^0.4.5
+npm install product-tour-js@^0.4.6
 ```
 
 Tất cả module Kyta đều sử dụng `ngx-translate`, vì vậy Product Tour luôn được tích hợp qua adapter `product-tour-js/angular/ngx-translate`. `@angular/core` và `@ngx-translate/core` đã có sẵn trong cấu trúc chuẩn của các module Kyta.
@@ -67,7 +159,7 @@ Kiểm tra `package.json`:
 {
   "dependencies": {
     // Thư viện Product Tour. Dùng cùng major/minor giữa các module Kyta.
-    "product-tour-js": "^0.4.5"
+    "product-tour-js": "^0.4.6"
   }
 }
 ```
@@ -140,16 +232,10 @@ Template có chú thích cho từng cấu hình:
 
 ```jsonc
 {
-  // ID ổn định và duy nhất của Product Tour trong module.
-  "id": "<module-name>-product-tour",
-
-  // Phiên bản nội dung. Tăng giá trị khi muốn người đã hoàn tất được xem tour mới.
-  "version": 1,
-
   // Tự chạy tour khớp với route hiện tại sau khi manager khởi tạo.
   "autoStart": true,
 
-  // Chỉ tự hiển thị một lần cho mỗi manifest/page/version.
+  // Chỉ tự hiển thị một lần cho mỗi page/version.
   "showOnce": true,
 
   // Khi người dùng đóng/bỏ qua, vẫn đánh dấu tour là đã xem.
@@ -239,9 +325,9 @@ Template có chú thích cho từng cấu hình:
 
 Quy ước cho Kyta:
 
-- `id` manifest: `<module-name>-product-tour`;
 - `storageKey`: dùng chung `kyta-product-tour` hoặc thêm tên module nếu cần tách biệt hoàn toàn;
-- tăng `version` khi nội dung hoặc thứ tự step thay đổi đáng kể;
+- không khai báo `id` hoặc `version` trong manifest chính;
+- khai báo và tăng `version` tại từng page khi nội dung hoặc thứ tự step thay đổi đáng kể;
 - dùng `onMissingTarget: "skip"` cho dashboard có nhiều khối render có điều kiện;
 - không đặt token, secret hoặc dữ liệu nhạy cảm trong JSON vì đây là static asset công khai với người dùng đã truy cập module.
 
@@ -260,6 +346,9 @@ Ví dụ `pages/dashboard.json`:
   // ID page, phải duy nhất trong toàn bộ manifest.
   // Giá trị này cũng được truyền vào startPage('dashboard').
   "id": "dashboard",
+
+  // Phiên bản riêng của page; completion key là kyta-product-tour:dashboard:v1.
+  "version": 1,
 
   // Điều kiện route để manager tự nhận diện page hiện tại.
   "match": {
@@ -624,4 +713,3 @@ Với action `goTo`, thêm `targetStep` là ID của step đích.
 - `ProductTourService.startPage()` mặc định reload và cache-bust manifest.
 - Kiểm tra cache của reverse proxy/CDN nếu file vẫn cũ.
 - Tăng `version` nếu mục tiêu là hiển thị lại tour cho người đã hoàn tất.
-

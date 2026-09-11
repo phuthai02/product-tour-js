@@ -53,7 +53,7 @@ test("target interaction can be configured for the tour and overridden per step"
 
   const manifest = defineTourManifest({
     allowInteraction: false,
-    pages: [{ id: "home", match: "/", steps: [{ target: "#blocked", title: "Blocked" }] }]
+    pages: [{ id: "home", version: 1, match: "/", steps: [{ target: "#blocked", title: "Blocked" }] }]
   });
   assert.equal(manifest.pages[0].config.allowInteraction, false);
   assert.equal(manifest.pages[0].config.steps[0].allowInteraction, false);
@@ -378,24 +378,25 @@ test("completion is namespaced by tour id and version", () => {
 
 test("multi-page manifests inherit defaults and match exact, glob, and query routes", () => {
   const manifest = defineTourManifest({
-    id: "app",
-    version: 4,
     labels: { next: "Continue" },
     progress: { type: "dots", position: "top-center" },
     pages: [
       {
         id: "dashboard",
+        version: 4,
         match: "/dashboard",
         steps: [{ type: "modal", content: "Dashboard" }]
       },
       {
         id: "project",
+        version: 5,
         match: { path: "/projects/:id", mode: "glob" },
         progress: { position: "bottom-right" },
         steps: [{ type: "modal", content: "Project" }]
       },
       {
         id: "invite",
+        version: 1,
         match: { path: "/invite", query: { source: "email" } },
         steps: [{ type: "modal", content: "Invite" }]
       }
@@ -403,8 +404,11 @@ test("multi-page manifests inherit defaults and match exact, glob, and query rou
   });
   const manager = new ProductTourManager(manifest);
 
-  assert.equal(manifest.pages[0].config.id, "app:dashboard");
+  assert.equal(manifest.pages[0].config.id, "dashboard");
   assert.equal(manifest.pages[0].config.version, 4);
+  assert.equal(manifest.pages[0].config.storageKey, "product-tour");
+  assert.equal(manager.getTour("dashboard").completionKey, "product-tour:dashboard:v4");
+  assert.equal(manager.getTour("project").completionKey, "product-tour:project:v5");
   assert.equal(manifest.pages[0].config.labels.next, "Continue");
   assert.deepEqual(manifest.pages[0].config.progress, { type: "dots", position: "top-center" });
   assert.deepEqual(manifest.pages[1].config.progress, { type: "dots", position: "bottom-right" });
@@ -415,25 +419,35 @@ test("multi-page manifests inherit defaults and match exact, glob, and query rou
   assert.deepEqual(defineTourManifest(manifest), manifest);
 });
 
+test("multi-page tracking requires page versions and rejects manifest identity", () => {
+  const page = { id: "home", version: 1, match: "/", steps: [{ type: "modal", content: "Home" }] };
+
+  assert.throws(() => defineTourManifest({ id: "app", pages: [page] }), /must not define "id"/);
+  assert.throws(() => defineTourManifest({ version: 2, pages: [page] }), /must not define "version"/);
+  assert.throws(
+    () => defineTourManifest({ pages: [{ ...page, version: undefined }] }),
+    /pages\[0\]\.version/
+  );
+});
+
 test("loadTourManifest concatenates pages from relative include files", async () => {
   const rootUrl = "https://example.test/config/product-tour.json";
   const sharedUrl = "https://example.test/config/tours/shared-pages.json";
   const projectUrl = "https://example.test/config/tours/project.json";
   const files = new Map([
     [rootUrl, {
-      id: "app",
-      version: 7,
       labels: { next: "Continue" },
       include: ["./tours/shared-pages.json", "./tours/project.json"]
     }],
     [sharedUrl, {
       pages: [
-        { id: "home", match: "/", steps: [{ type: "modal", content: "Home" }] },
-        { id: "settings", match: "/settings", steps: [{ type: "modal", content: "Settings" }] }
+        { id: "home", version: 2, match: "/", steps: [{ type: "modal", content: "Home" }] },
+        { id: "settings", version: 3, match: "/settings", steps: [{ type: "modal", content: "Settings" }] }
       ]
     }],
     [projectUrl, {
       id: "project",
+      version: 7,
       match: { path: "/projects/:id", mode: "glob" },
       theme: { accentColor: "#0891b2" },
       steps: [{ type: "modal", content: "Project" }]
@@ -450,7 +464,7 @@ test("loadTourManifest concatenates pages from relative include files", async ()
 
   assert.deepEqual(requested, [rootUrl, sharedUrl, projectUrl]);
   assert.deepEqual(manifest.pages.map((page) => page.id), ["home", "settings", "project"]);
-  assert.equal(manifest.pages[2].config.id, "app:project");
+  assert.equal(manifest.pages[2].config.id, "project");
   assert.equal(manifest.pages[2].config.version, 7);
   assert.equal(manifest.pages[2].config.labels.next, "Continue");
   assert.equal(manifest.pages[2].config.theme.accentColor, "#0891b2");
@@ -479,6 +493,7 @@ test("framework-neutral service localizes manifests and owns language subscripti
       pages: [
         {
           id: "home",
+          version: 1,
           match: "/",
           steps: [{ type: "modal", title: "i18n:tour.title" }]
         }
@@ -506,7 +521,7 @@ test("framework-neutral service does not subscribe to language changes by defaul
   const service = createProductTourService({
     source: {
       autoStart: false,
-      pages: [{ id: "home", match: "/", steps: [{ type: "modal", content: "Welcome" }] }]
+      pages: [{ id: "home", version: 1, match: "/", steps: [{ type: "modal", content: "Welcome" }] }]
     },
     autoStart: false,
     onLanguageChange() {

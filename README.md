@@ -853,8 +853,6 @@ Dùng `pages` và khởi tạo bằng `initProductTours`:
 
 ```json
 {
-  "id": "app-onboarding",
-  "version": 1,
   "watchRoutes": true,
   "showOnce": true,
   "showCloseButton": true,
@@ -868,6 +866,7 @@ Dùng `pages` và khởi tạo bằng `initProductTours`:
   "pages": [
     {
       "id": "dashboard",
+      "version": 1,
       "match": "/dashboard",
       "steps": [
         {
@@ -884,6 +883,7 @@ Dùng `pages` và khởi tạo bằng `initProductTours`:
     },
     {
       "id": "settings",
+      "version": 1,
       "match": {
         "path": "/settings",
         "query": {
@@ -908,6 +908,7 @@ Dùng `pages` và khởi tạo bằng `initProductTours`:
     },
     {
       "id": "project-detail",
+      "version": 1,
       "match": {
         "path": "/projects/:id",
         "mode": "glob"
@@ -964,9 +965,9 @@ Khi route thay đổi, manager dừng tour của page cũ và tìm tour khớp p
 
 ### Kế thừa cấu hình
 
-Các option chung như `version`, `showOnce`, `storage`, `scrollBehavior`, `labels`, `theme`, `progress`, `showCloseButton` và `allowInteraction` được kế thừa từ manifest xuống page. Page có thể override giá trị riêng.
+Các option chung như `showOnce`, `storage`, `scrollBehavior`, `labels`, `theme`, `progress`, `showCloseButton` và `allowInteraction` được kế thừa từ manifest xuống page. Mỗi page phải khai báo `version` riêng.
 
-Mỗi page dùng completion key riêng dựa trên id `<manifest-id>:<page-id>`. Hoàn tất tour Dashboard không làm mất tour Settings.
+Mỗi page dùng completion key `<storageKey>:<page-id>:v<page-version>`, ví dụ `product-tour:dashboard:v2`. Manifest chính không cần `id` hoặc `version`. Hoàn tất tour Dashboard không làm mất tour Settings.
 
 ## Tách cấu hình thành nhiều file JSON
 
@@ -989,8 +990,6 @@ File main chứa cấu hình chung và danh sách file con:
 
 ```json
 {
-  "id": "app-onboarding",
-  "version": 3,
   "watchRoutes": true,
   "showOnce": true,
   "labels": {
@@ -1016,6 +1015,7 @@ File main chứa cấu hình chung và danh sách file con:
   "pages": [
     {
       "id": "home",
+      "version": 1,
       "match": "/",
       "steps": [
         {
@@ -1026,6 +1026,7 @@ File main chứa cấu hình chung và danh sách file con:
     },
     {
       "id": "settings",
+      "version": 1,
       "match": "/settings",
       "steps": [
         {
@@ -1044,6 +1045,7 @@ File main chứa cấu hình chung và danh sách file con:
 ```json
 {
   "id": "project",
+  "version": 1,
   "match": {
     "path": "/projects/:id",
     "mode": "glob"
@@ -1071,6 +1073,7 @@ Một manifest con có thể chứa `pages` và `include`:
   "pages": [
     {
       "id": "admin-home",
+      "version": 1,
       "match": "/admin",
       "steps": [
         {
@@ -1458,12 +1461,12 @@ document.addEventListener("product-tour:complete", (event) => {
 
 ## Bảng cấu hình đầy đủ
 
-### Config cấp tour/manifest/page
+### Config cấp tour/page
 
 | Field | Kiểu | Mặc định | Ý nghĩa |
 | --- | --- | --- | --- |
-| `id` | string | `default` | ID ổn định của tour hoặc manifest |
-| `version` | string/number | `1` | Đổi giá trị để tour đã xem được hiện lại |
+| `id` | string | `default` | ID của tour đơn; với multi-page, khai báo trên từng page |
+| `version` | string/number | `1` | Phiên bản tour đơn; với multi-page, bắt buộc trên từng page |
 | `autoStart` | boolean | `true` | Tự chạy khi khởi tạo |
 | `showOnce` | boolean | `true` | Ghi nhớ và chỉ tự hiện một lần |
 | `markOnDismiss` | boolean | `true` | Xem dismiss là đã xem tour |
@@ -1512,6 +1515,7 @@ Nếu `type` bị bỏ trống: có `target` thì mặc định là tooltip, kh�
 | Field | Bắt buộc | Ý nghĩa |
 | --- | --- | --- |
 | `id` | Có | ID page duy nhất |
+| `version` | Có | Phiên bản riêng; tăng để page đã hoàn tất được hiện lại |
 | `match` | Có | Route matcher |
 | `steps` | Có | Tour của page |
 | `enabled` | Không | Bật/tắt page; mặc định `true` |

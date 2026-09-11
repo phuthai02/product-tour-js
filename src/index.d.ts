@@ -118,11 +118,12 @@ export interface PageMatch {
 
 export interface ProductTourPage extends Omit<ProductTourConfig, "id"> {
   id: string;
+  version: string | number;
   match: string | PageMatch;
   enabled?: boolean;
 }
 
-export interface ProductTourManifest extends Omit<ProductTourConfig, "steps"> {
+export interface ProductTourManifest extends Omit<ProductTourConfig, "id" | "version" | "steps"> {
   watchRoutes?: boolean;
   include?: Array<string | URL>;
   pages?: ProductTourPage[];
