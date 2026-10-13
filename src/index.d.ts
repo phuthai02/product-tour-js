@@ -124,15 +124,17 @@ export interface ProductTourPage extends Omit<ProductTourConfig, "id"> {
 }
 
 /**
- * An include that is downloaded only when the current URL matches `match`.
- * If the file is a single page, `id` and `match` here replace those in the file.
+ * An include downloaded on demand instead of at startup: when the URL matches
+ * `match`, or when `startPage(id)` / `loadPage(id)` asks for `id`. Without `match`
+ * the page is only started manually. For a single-page file, `match` here replaces the file's own.
  */
-export interface LazyInclude {
+export type LazyInclude = {
   src: string | URL;
-  match: string | PageMatch;
-  id?: string;
   enabled?: boolean;
-}
+} & (
+  | { id: string; match?: string | PageMatch }
+  | { id?: string; match: string | PageMatch }
+);
 
 export interface ProductTourManifest extends Omit<ProductTourConfig, "id" | "version" | "steps"> {
   watchRoutes?: boolean;

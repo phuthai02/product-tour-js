@@ -1105,7 +1105,7 @@ Một manifest con có thể chứa `pages` và `include`:
 
 ### Chỉ tải JSON của trang đang mở
 
-Với `include` dạng chuỗi, thư viện phải tải mọi file ngay từ đầu vì chỉ biết file đó khớp route nào sau khi đọc nó. Để tránh việc này, khai báo `match` ngay tại `include`:
+Với `include` dạng chuỗi, thư viện phải tải mọi file ngay từ đầu vì chỉ biết file đó là page nào, khớp route nào, sau khi đọc nó. Để tránh việc này, khai báo `id` và/hoặc `match` ngay tại `include`:
 
 ```json
 {
@@ -1131,18 +1131,24 @@ Với `include` dạng chuỗi, thư viện phải tải mọi file ngay từ đ
 }
 ```
 
-Khi khởi tạo chỉ tải file main và các `include` dạng chuỗi. File của `include` dạng object chỉ được tải khi URL hiện tại khớp `match`, và chỉ tải một lần: lần điều hướng sau dùng lại bản đã tải.
+Khi khởi tạo chỉ tải file main và các `include` dạng chuỗi. File của `include` dạng object chỉ được tải khi cần, và chỉ tải một lần: lần sau dùng lại bản đã tải.
 
 | Field | Bắt buộc | Ý nghĩa |
 | --- | --- | --- |
 | `src` | Có | Đường dẫn file, tính tương đối từ file chứa `include` |
-| `match` | Có | Chuỗi hoặc object giống `match` của page; dùng để quyết định khi nào tải file |
-| `id` | Không | ID page. Cần khi muốn gọi `startPage(id)`, `loadPage(id)` hoặc `reset(id)` trước khi người dùng vào trang đó |
+| `id` | Một trong `id` / `match` | ID page. Dùng để tải file khi gọi `startPage(id)` hoặc `loadPage(id)`, và để `reset(id)` |
+| `match` | Một trong `id` / `match` | Chuỗi hoặc object giống `match` của page. Tải file khi URL hiện tại khớp (cần khi dùng `watchRoutes`/`autoStart`) |
 | `enabled` | Không | `false` thì không bao giờ tải theo route |
+
+Chọn cách khai báo:
+
+- Tour chỉ chạy bằng `startPage(id)` (ví dụ `watchRoutes: false`, `autoStart: false`): chỉ cần `{ "src": "...", "id": "..." }`.
+- Tour tự chạy theo route: cần `match`, và nên có cả `id` nếu còn gọi `startPage(id)`.
 
 Quy tắc:
 
-- Nếu `src` là file một page thì file đó **không cần** `match`; `match` ở `include` được dùng thay thế. Nếu file có `id` thì phải trùng `id` ở `include`.
+- Nếu `src` là file một page thì file đó **không cần** `match`, cũng không cần `id` khi `include` đã có `id`. `match` ở `include` (nếu có) được dùng thay `match` trong file. Nếu file có `id` thì phải trùng `id` ở `include`.
+- Page không có `match` ở bất kỳ đâu chỉ chạy được bằng `startPage(id)`.
 - `src` cũng có thể là manifest có `pages` và `include`, ví dụ `admin.json` ở trên. Khi route khớp, cả manifest được tải và các page trong đó khớp theo `match` riêng của chúng. Các `include` dạng object bên trong tiếp tục được tải theo route.
 - Thứ tự khớp vẫn theo thứ tự khai báo.
 - Khi điều hướng sang trang cần tải, tour của trang trước dừng ngay, tour mới chạy sau khi tải xong. Nếu tải lỗi khi đang điều hướng, lỗi được đưa vào `onError` (trang đầu tiên thì `initProductTours` bị reject); lỗi không được nhớ lại nên lần vào trang sau sẽ thử tải lại.
@@ -1757,7 +1763,7 @@ await tour.start({ force: true });
 
 ### Mở một trang nhưng vẫn thấy tải file của trang khác
 
-Chỉ `include` dạng object `{ "src": "...", "match": ... }` mới được tải theo route. `include` dạng chuỗi luôn được tải ngay lúc khởi tạo.
+Chỉ `include` dạng object `{ "src": "...", "id": ... }` hoặc `{ "src": "...", "match": ... }` mới được tải theo nhu cầu. `include` dạng chuỗi luôn được tải ngay lúc khởi tạo.
 
 ### Tour hiện lại sau mỗi lần refresh
 

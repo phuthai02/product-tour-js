@@ -370,7 +370,7 @@ function isUrlObject(value) {
   return typeof URL !== "undefined" && value instanceof URL;
 }
 
-// An include declared as an object ({ src, match }) is fetched only when the route matches.
+// An include declared as an object ({ src, id } or { src, match }) is fetched on demand, not at startup.
 function isLazyInclude(value) {
   return isPlainObject(value) && !isUrlObject(value);
 }
@@ -416,7 +416,7 @@ export function defineTourManifest(input) {
       id: pageId,
       version: pageVersion,
       enabled: page.enabled ?? true,
-      match: normalizePageMatch(page.match, `pages[${index}].match`),
+      match: page.match === null ? null : normalizePageMatch(page.match, `pages[${index}].match`),
       config
     };
   });
@@ -514,7 +514,7 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
         const page = {
           ...manifest,
           id: manifest.id ?? entry.id,
-          match: entry.match,
+          match: entry.match ?? manifest.match ?? null,
           enabled: manifest.enabled ?? entry.enabled
         };
         return { manifest, pages: [inheritPageOptions(page, inheritedOptions)] };
@@ -529,7 +529,10 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
             (typeof include.src === "string" && include.src.trim()) || isUrlObject(include.src),
             `${path}.src must be a non-empty URL string.`
           );
-          assert(include.match !== undefined, `${path}.match is required so the file can be loaded only on that route.`);
+          assert(
+            include.match !== undefined || include.id !== undefined,
+            `${path} needs "id" (loaded by startPage/loadPage) or "match" (loaded when the route matches).`
+          );
           assert(
             include.id === undefined || (typeof include.id === "string" && include.id.trim()),
             `${path}.id must be a non-empty string.`
@@ -539,7 +542,7 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
         }
         assert(
           (typeof include === "string" && include.trim()) || isUrlObject(include),
-          `Manifest include[${index}] must be a non-empty URL string or an object with "src" and "match".`
+          `Manifest include[${index}] must be a non-empty URL string or an object with "src" and "id" or "match".`
         );
       }
       const directPages = manifest.pages ?? [];
@@ -577,7 +580,7 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
       lazy: true,
       id: entry.id ?? null,
       enabled: entry.enabled ?? true,
-      match: normalizePageMatch(entry.match, `Manifest include[${index}].match`),
+      match: entry.match === undefined ? null : normalizePageMatch(entry.match, `Manifest include[${index}].match`),
       load: async () => {
         const expanded = await expandSource(url, shared, parentUrl, new Set(chain), false, entry);
         return defineTourManifest({ pages: expanded.pages }).pages;

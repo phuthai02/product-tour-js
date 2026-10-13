@@ -102,7 +102,8 @@
     },
     "lazyInclude": {
       "type": "object",
-      "required": ["src", "match"],
+      "required": ["src"],
+      "anyOf": [{ "required": ["id"] }, { "required": ["match"] }],
       "additionalProperties": false,
       "properties": {
         "src": { "type": "string", "minLength": 1 },

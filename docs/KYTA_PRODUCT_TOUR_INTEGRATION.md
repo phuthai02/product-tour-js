@@ -9,7 +9,7 @@ Phần này là cấu hình tối thiểu để Product Tour chạy được nga
 ### Bước 1: Cài package
 
 ```bash
-npm install product-tour-js@^0.4.6
+npm install product-tour-js@^0.4.7
 ```
 
 ### Bước 2: Đăng ký một lần trong `bootstrap.ts`
@@ -96,7 +96,7 @@ flowchart LR
 
 Quy ước tích hợp chung:
 
-- package: `product-tour-js@^0.4.6`;
+- package: `product-tour-js@^0.4.7`;
 - đăng ký toàn ứng dụng trong `src/main/webapp/bootstrap.ts`;
 - manifest chính: `src/main/webapp/content/product-tours/product-tour.json`;
 - tour riêng của từng page: `src/main/webapp/content/product-tours/pages/<page-id>.json`;
@@ -143,15 +143,11 @@ content/product-tours/product-tour.json
 
 Đường dẫn trong `include` được tính tương đối từ file đang chứa `include`.
 
-`include` dạng chuỗi như trên được tải hết ngay khi khởi tạo. Để chỉ tải file của trang đang mở, khai báo `match` tại `include` và bỏ `match` khỏi file page:
+`include` dạng chuỗi như trên được tải hết ngay khi khởi tạo. Để chỉ tải file của page được gọi bằng `startPage(pageId)`, khai báo `id` tại `include`; file page không cần `match`:
 
 ```json
 "include": [
-  {
-    "src": "./pages/dashboard.json",
-    "id": "dashboard",
-    "match": { "path": "*/dashboard", "mode": "glob" }
-  }
+  { "src": "./pages/dashboard.json", "id": "dashboard" }
 ]
 ```
 
@@ -160,7 +156,7 @@ content/product-tours/product-tour.json
 Chạy tại thư mục frontend của module:
 
 ```bash
-npm install product-tour-js@^0.4.6
+npm install product-tour-js@^0.4.7
 ```
 
 Tất cả module Kyta đều sử dụng `ngx-translate`, vì vậy Product Tour luôn được tích hợp qua adapter `product-tour-js/angular/ngx-translate`. `@angular/core` và `@ngx-translate/core` đã có sẵn trong cấu trúc chuẩn của các module Kyta.
@@ -171,7 +167,7 @@ Kiểm tra `package.json`:
 {
   "dependencies": {
     // Thư viện Product Tour. Dùng cùng major/minor giữa các module Kyta.
-    "product-tour-js": "^0.4.6"
+    "product-tour-js": "^0.4.7"
   }
 }
 ```

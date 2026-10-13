@@ -118,7 +118,7 @@ export class ProductTourManager {
   findPage(location = this.window?.location) {
     if (!location) return null;
     const url = toUrl(location, this.window?.location?.href ?? "http://localhost/");
-    return this.manifest.pages.find((page) => page.enabled && pageMatches(page, url)) ?? null;
+    return this.manifest.pages.find((page) => page.enabled && page.match && pageMatches(page, url)) ?? null;
   }
 
   /** Download the include file that declares `pageId` if it has not been loaded yet. */
