@@ -96,12 +96,13 @@ export class ProductTourManager {
   constructor(manifest, runtime = {}) {
     const isNormalizedManifest = Array.isArray(manifest?.pages)
       && manifest.pages.length > 0
-      && manifest.pages.every((page) => page.config);
+      && manifest.pages.every((page) => page.config || page.lazy);
     this.manifest = isNormalizedManifest ? manifest : defineTourManifest(manifest);
     this.runtime = runtime;
     this.window = runtime.window ?? globalThis.window;
     this.document = runtime.document ?? globalThis.document;
     this.tours = new Map();
+    this.lazyLoads = new Map();
     this.activePageId = null;
     this.state = "ready";
     this.unsubscribeNavigation = null;
@@ -113,15 +114,29 @@ export class ProductTourManager {
     return this.activePageId ? this.tours.get(this.activePageId) ?? null : null;
   }
 
+  /** First enabled page matching the location. An include not downloaded yet is returned as `{ lazy: true }`. */
   findPage(location = this.window?.location) {
     if (!location) return null;
     const url = toUrl(location, this.window?.location?.href ?? "http://localhost/");
     return this.manifest.pages.find((page) => page.enabled && pageMatches(page, url)) ?? null;
   }
 
+  /** Download the include file that declares `pageId` if it has not been loaded yet. */
+  async loadPage(pageId) {
+    for (;;) {
+      const page = this.manifest.pages.find((candidate) => candidate.id === pageId);
+      if (!page) throw new RangeError(`[product-tour-js] Unknown page: ${pageId}.`);
+      if (!page.lazy) return page;
+      await this._loadLazyPage(page);
+    }
+  }
+
   getTour(pageId) {
     const page = this.manifest.pages.find((candidate) => candidate.id === pageId);
     if (!page) throw new RangeError(`[product-tour-js] Unknown page: ${pageId}.`);
+    if (page.lazy) {
+      throw new Error(`[product-tour-js] Page "${pageId}" is not loaded yet. Await loadPage("${pageId}") or startPage("${pageId}") first.`);
+    }
     if (!this.tours.has(pageId)) {
       const onEvent = this.runtime.onEvent;
       const onComplete = this.runtime.onComplete;
@@ -147,7 +162,17 @@ export class ProductTourManager {
   async refresh(options = {}) {
     this._assertBrowser();
     const refreshId = ++this.refreshId;
-    const page = this.findPage(options.location);
+    let page = this.findPage(options.location);
+    if (page?.lazy) {
+      // The previous page's tour must not stay on screen while the next page's JSON is downloading.
+      this.activeTour?.stop("route-change");
+      this.activePageId = null;
+      while (page?.lazy) {
+        await this._loadLazyPage(page);
+        if (refreshId !== this.refreshId) return null;
+        page = this.findPage(options.location);
+      }
+    }
     if (!page) {
       this.activeTour?.stop("route-change");
       this.activePageId = null;
@@ -171,6 +196,7 @@ export class ProductTourManager {
 
   async startPage(pageId, options = {}) {
     this._assertBrowser();
+    if (this.manifest.pages.find((page) => page.id === pageId)?.lazy) await this.loadPage(pageId);
     const tour = this.getTour(pageId);
     if (pageId !== this.activePageId) this.activeTour?.stop("page-change");
     this.activePageId = pageId;
@@ -185,7 +211,10 @@ export class ProductTourManager {
       this.getTour(pageId).reset();
       return this;
     }
-    for (const page of this.manifest.pages) this.getTour(page.id).reset();
+    // Pages whose include has not been downloaded have no tour to reset yet; use loadPage(id) first.
+    for (const page of this.manifest.pages) {
+      if (!page.lazy) this.getTour(page.id).reset();
+    }
     return this;
   }
 
@@ -204,6 +233,23 @@ export class ProductTourManager {
     for (const tour of this.tours.values()) tour.destroy();
     this.tours.clear();
     this.state = "destroyed";
+  }
+
+  // Replaces the placeholder with the pages of its file, keeping the declared page order.
+  async _loadLazyPage(lazyPage) {
+    let pending = this.lazyLoads.get(lazyPage);
+    if (!pending) {
+      pending = lazyPage.load().finally(() => this.lazyLoads.delete(lazyPage));
+      this.lazyLoads.set(lazyPage, pending);
+    }
+    const loaded = await pending;
+    const index = this.manifest.pages.indexOf(lazyPage);
+    if (index === -1) return;
+    for (const page of loaded) {
+      const duplicate = page.id != null && this.manifest.pages.some((other) => other !== lazyPage && other.id === page.id);
+      if (duplicate) throw new TypeError(`[product-tour-js] Page id "${page.id}" is declared more than once.`);
+    }
+    this.manifest.pages.splice(index, 1, ...loaded);
   }
 
   _onNavigation() {

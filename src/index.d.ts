@@ -123,9 +123,20 @@ export interface ProductTourPage extends Omit<ProductTourConfig, "id"> {
   enabled?: boolean;
 }
 
+/**
+ * An include that is downloaded only when the current URL matches `match`.
+ * If the file is a single page, `id` and `match` here replace those in the file.
+ */
+export interface LazyInclude {
+  src: string | URL;
+  match: string | PageMatch;
+  id?: string;
+  enabled?: boolean;
+}
+
 export interface ProductTourManifest extends Omit<ProductTourConfig, "id" | "version" | "steps"> {
   watchRoutes?: boolean;
-  include?: Array<string | URL>;
+  include?: Array<string | URL | LazyInclude>;
   pages?: ProductTourPage[];
 }
 
@@ -209,7 +220,8 @@ export declare class ProductTourManager {
   readonly activePageId: string | null;
   readonly activeTour: ProductTour | null;
   readonly state: "ready" | "active" | "destroyed";
-  findPage(location?: Location | URL | string): { id: string } | null;
+  findPage(location?: Location | URL | string): { id: string | null; lazy?: true } | null;
+  loadPage(pageId: string): Promise<unknown>;
   getTour(pageId: string): ProductTour;
   start(options?: { force?: boolean; watchRoutes?: boolean }): Promise<ProductTour | null>;
   refresh(options?: { force?: boolean; location?: Location | URL | string }): Promise<ProductTour | null>;

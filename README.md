@@ -1101,6 +1101,53 @@ Một manifest con có thể chứa `pages` và `include`:
 - `page.id` phải duy nhất sau khi nối tất cả file.
 - Include tạo vòng lặp sẽ bị từ chối.
 - Cấu hình file cha được kế thừa; file con và page cụ thể có thể override.
+- `include` dạng chuỗi được tải ngay khi khởi tạo. Muốn chỉ tải khi vào đúng trang, xem mục "Chỉ tải JSON của trang đang mở" bên dưới.
+
+### Chỉ tải JSON của trang đang mở
+
+Với `include` dạng chuỗi, thư viện phải tải mọi file ngay từ đầu vì chỉ biết file đó khớp route nào sau khi đọc nó. Để tránh việc này, khai báo `match` ngay tại `include`:
+
+```json
+{
+  "watchRoutes": true,
+  "include": [
+    "./tours/shared-pages.json",
+    {
+      "src": "./tours/project.json",
+      "id": "project",
+      "match": {
+        "path": "/projects/:id",
+        "mode": "glob"
+      }
+    },
+    {
+      "src": "./tours/admin.json",
+      "match": {
+        "path": "/admin",
+        "mode": "prefix"
+      }
+    }
+  ]
+}
+```
+
+Khi khởi tạo chỉ tải file main và các `include` dạng chuỗi. File của `include` dạng object chỉ được tải khi URL hiện tại khớp `match`, và chỉ tải một lần: lần điều hướng sau dùng lại bản đã tải.
+
+| Field | Bắt buộc | Ý nghĩa |
+| --- | --- | --- |
+| `src` | Có | Đường dẫn file, tính tương đối từ file chứa `include` |
+| `match` | Có | Chuỗi hoặc object giống `match` của page; dùng để quyết định khi nào tải file |
+| `id` | Không | ID page. Cần khi muốn gọi `startPage(id)`, `loadPage(id)` hoặc `reset(id)` trước khi người dùng vào trang đó |
+| `enabled` | Không | `false` thì không bao giờ tải theo route |
+
+Quy tắc:
+
+- Nếu `src` là file một page thì file đó **không cần** `match`; `match` ở `include` được dùng thay thế. Nếu file có `id` thì phải trùng `id` ở `include`.
+- `src` cũng có thể là manifest có `pages` và `include`, ví dụ `admin.json` ở trên. Khi route khớp, cả manifest được tải và các page trong đó khớp theo `match` riêng của chúng. Các `include` dạng object bên trong tiếp tục được tải theo route.
+- Thứ tự khớp vẫn theo thứ tự khai báo.
+- Khi điều hướng sang trang cần tải, tour của trang trước dừng ngay, tour mới chạy sau khi tải xong. Nếu tải lỗi khi đang điều hướng, lỗi được đưa vào `onError` (trang đầu tiên thì `initProductTours` bị reject); lỗi không được nhớ lại nên lần vào trang sau sẽ thử tải lại.
+- `ProductTourService` dịch `i18n:` cho cả page tải muộn.
+- `fetch` và `signal` truyền lúc khởi tạo cũng được dùng cho các lần tải muộn.
 
 Code khởi tạo không thay đổi:
 
@@ -1408,12 +1455,13 @@ const manager = await initProductTours("/product-tour.json");
 | --- | --- |
 | `manager.activePageId` | ID page đang active hoặc `null` |
 | `manager.activeTour` | Tour đang active hoặc `null` |
-| `manager.findPage(location)` | Tìm page khớp một URL |
-| `manager.getTour(pageId)` | Lấy hoặc tạo instance của page |
+| `manager.findPage(location)` | Tìm page khớp một URL; với `include` chưa tải, trả về `{ id, lazy: true }` |
+| `manager.loadPage(pageId)` | Tải file `include` khai báo `id` này nếu chưa tải |
+| `manager.getTour(pageId)` | Lấy hoặc tạo instance của page; báo lỗi nếu page chưa được tải |
 | `manager.start()` | Bắt đầu manager và page hiện tại |
 | `manager.refresh()` | Tìm lại page theo URL hiện tại |
 | `manager.startPage(pageId)` | Chạy page cụ thể mà không đổi URL |
-| `manager.reset(pageId)` | Reset một page; bỏ `pageId` để reset tất cả |
+| `manager.reset(pageId)` | Reset một page; bỏ `pageId` để reset tất cả page đã tải (page chưa tải thì gọi `loadPage` trước) |
 | `manager.stop()` | Dừng tour và ngừng theo dõi route |
 | `manager.destroy()` | Hủy manager và tất cả instance |
 
@@ -1486,7 +1534,7 @@ document.addEventListener("product-tour:complete", (event) => {
 | `theme` | object | Xem phần Theme | Màu và hình thức chính |
 | `steps` | array | Bắt buộc với tour/page | Danh sách step |
 | `pages` | array | — | Danh sách page trong manifest |
-| `include` | array | — | Danh sách file manifest/page con |
+| `include` | array | — | Danh sách file manifest/page con; chuỗi thì tải ngay, `{ src, match }` thì chỉ tải khi route khớp |
 | `watchRoutes` | boolean | `true` | Theo dõi route với manager |
 
 ### Config của step
@@ -1706,6 +1754,10 @@ await tour.start({ force: true });
 ### Include không tải đúng đường dẫn
 
 Đường dẫn include được tính từ file chứa `include`, không phải luôn từ file main và cũng không phải từ file JavaScript.
+
+### Mở một trang nhưng vẫn thấy tải file của trang khác
+
+Chỉ `include` dạng object `{ "src": "...", "match": ... }` mới được tải theo route. `include` dạng chuỗi luôn được tải ngay lúc khởi tạo.
 
 ### Tour hiện lại sau mỗi lần refresh
 

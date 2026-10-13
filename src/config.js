@@ -302,8 +302,7 @@ export function defineTourConfig(input) {
   };
 }
 
-function normalizePageMatch(match, index) {
-  const path = `pages[${index}].match`;
+function normalizePageMatch(match, path) {
   if (typeof match === "string") {
     const mode = match.includes("*") || match.includes(":") ? "glob" : "exact";
     return { path: match, mode, hash: null, query: {} };
@@ -367,6 +366,20 @@ function inheritPageOptions(page, shared) {
   };
 }
 
+function isUrlObject(value) {
+  return typeof URL !== "undefined" && value instanceof URL;
+}
+
+// An include declared as an object ({ src, match }) is fetched only when the route matches.
+function isLazyInclude(value) {
+  return isPlainObject(value) && !isUrlObject(value);
+}
+
+// Placeholder for an include that has not been downloaded yet; see loadTourManifest.
+function isLazyPage(page) {
+  return isPlainObject(page) && page.lazy === true && typeof page.load === "function";
+}
+
 /** Validate a multi-page product-tour manifest and build each inherited page config. */
 export function defineTourManifest(input) {
   assert(isPlainObject(input), "The multi-page configuration must be a JSON object.");
@@ -376,6 +389,7 @@ export function defineTourManifest(input) {
   const shared = pickTourOptions(input);
   delete shared.version;
   const pages = input.pages.map((page, index) => {
+    if (isLazyPage(page)) return page;
     assert(isPlainObject(page), `pages[${index}] must be an object.`);
     assert(typeof page.id === "string" && page.id.trim(), `pages[${index}].id must be a non-empty string.`);
     assert(page.match !== undefined, `pages[${index}].match is required.`);
@@ -402,11 +416,12 @@ export function defineTourManifest(input) {
       id: pageId,
       version: pageVersion,
       enabled: page.enabled ?? true,
-      match: normalizePageMatch(page.match, index),
+      match: normalizePageMatch(page.match, `pages[${index}].match`),
       config
     };
   });
-  assert(new Set(pages.map((page) => page.id)).size === pages.length, "Page ids must be unique.");
+  const pageIds = pages.map((page) => page.id).filter((id) => id !== null && id !== undefined);
+  assert(new Set(pageIds).size === pageIds.length, "Page ids must be unique.");
   return {
     autoStart: input.autoStart ?? DEFAULT_CONFIG.autoStart,
     watchRoutes: input.watchRoutes ?? true,
@@ -444,7 +459,6 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
   const fetcher = options.fetch ?? globalThis.fetch;
   const environmentBase = globalThis.location?.href ?? "http://product-tour.local/";
   const fallbackBase = new URL(String(options.baseUrl ?? environmentBase), environmentBase).href;
-  const stack = new Set();
 
   const resolveUrl = (value, base = fallbackBase) => new URL(String(value), base).href;
 
@@ -475,7 +489,8 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
     return { json, url: resolvedUrl, key: resolvedUrl };
   };
 
-  const expandSource = async (currentSource, inheritedOptions, parentUrl, isRoot = false) => {
+  // `entry` is set when the source comes from a lazy include; its id/match/enabled apply to a page file.
+  const expandSource = async (currentSource, inheritedOptions, parentUrl, stack, isRoot = false, entry = null) => {
     const record = await readSource(currentSource, parentUrl, isRoot);
     if (stack.has(record.key)) {
       throw new TypeError(`[product-tour-js] Circular manifest include detected at ${record.url}.`);
@@ -488,17 +503,43 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
       if (isPageFile) {
         assert(manifest.pages === undefined, 'A page file cannot also contain "pages".');
         assert(manifest.include === undefined, 'A page file cannot also contain "include".');
-        assert(manifest.match !== undefined, 'A page file with "steps" must also contain "match".');
-        return { manifest, pages: [inheritPageOptions(manifest, inheritedOptions)] };
+        if (!entry) {
+          assert(manifest.match !== undefined, 'A page file with "steps" must also contain "match".');
+          return { manifest, pages: [inheritPageOptions(manifest, inheritedOptions)] };
+        }
+        assert(
+          entry.id === undefined || manifest.id === undefined || manifest.id === entry.id,
+          `Page file ${record.url} has id "${manifest.id}" but its include declares id "${entry.id}".`
+        );
+        const page = {
+          ...manifest,
+          id: manifest.id ?? entry.id,
+          match: entry.match,
+          enabled: manifest.enabled ?? entry.enabled
+        };
+        return { manifest, pages: [inheritPageOptions(page, inheritedOptions)] };
       }
       assert(manifest.pages === undefined || Array.isArray(manifest.pages), 'Manifest "pages" must be an array.');
       assert(manifest.include === undefined || Array.isArray(manifest.include), 'Manifest "include" must be an array.');
       const includes = manifest.include ?? [];
       for (const [index, include] of includes.entries()) {
-        const isUrl = typeof URL !== "undefined" && include instanceof URL;
+        if (isLazyInclude(include)) {
+          const path = `Manifest include[${index}]`;
+          assert(
+            (typeof include.src === "string" && include.src.trim()) || isUrlObject(include.src),
+            `${path}.src must be a non-empty URL string.`
+          );
+          assert(include.match !== undefined, `${path}.match is required so the file can be loaded only on that route.`);
+          assert(
+            include.id === undefined || (typeof include.id === "string" && include.id.trim()),
+            `${path}.id must be a non-empty string.`
+          );
+          assert(include.enabled === undefined || typeof include.enabled === "boolean", `${path}.enabled must be a boolean.`);
+          continue;
+        }
         assert(
-          (typeof include === "string" && include.trim()) || isUrl,
-          `Manifest include[${index}] must be a non-empty URL string.`
+          (typeof include === "string" && include.trim()) || isUrlObject(include),
+          `Manifest include[${index}] must be a non-empty URL string or an object with "src" and "match".`
         );
       }
       const directPages = manifest.pages ?? [];
@@ -509,8 +550,12 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
 
       const shared = mergeTourOptions(inheritedOptions, manifest);
       const pages = directPages.map((page) => inheritPageOptions(page, shared));
-      for (const include of includes) {
-        const included = await expandSource(include, shared, record.url);
+      for (const [index, include] of includes.entries()) {
+        if (isLazyInclude(include)) {
+          pages.push(createLazyPage(include, index, shared, record.url, stack));
+          continue;
+        }
+        const included = await expandSource(include, shared, record.url, stack);
         pages.push(...included.pages);
       }
       return { manifest, pages };
@@ -519,6 +564,27 @@ export async function loadTourManifest(source = "/product-tour.json", options = 
     }
   };
 
-  const expanded = await expandSource(source, {}, null, true);
+  // Registers the route only; the file is downloaded later by the manager when the route matches.
+  const createLazyPage = (include, index, shared, parentUrl, stack) => {
+    const entry = {
+      id: include.id?.trim(),
+      match: include.match,
+      enabled: include.enabled
+    };
+    const url = resolveUrl(include.src, parentUrl);
+    const chain = new Set(stack);
+    return {
+      lazy: true,
+      id: entry.id ?? null,
+      enabled: entry.enabled ?? true,
+      match: normalizePageMatch(entry.match, `Manifest include[${index}].match`),
+      load: async () => {
+        const expanded = await expandSource(url, shared, parentUrl, new Set(chain), false, entry);
+        return defineTourManifest({ pages: expanded.pages }).pages;
+      }
+    };
+  };
+
+  const expanded = await expandSource(source, {}, null, new Set(), true);
   return defineTourManifest({ ...expanded.manifest, pages: expanded.pages });
 }

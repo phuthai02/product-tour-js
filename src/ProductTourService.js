@@ -25,6 +25,17 @@ async function localizeValue(value, translate, prefix) {
   return value;
 }
 
+// Pages from includes not downloaded yet are translated when the manager loads them.
+function localizePages(pages, translate, prefix) {
+  return Promise.all(pages.map((page) => {
+    if (!page.lazy) return localizeValue(page, translate, prefix);
+    return {
+      ...page,
+      load: async () => localizePages(await page.load(), translate, prefix)
+    };
+  }));
+}
+
 function unsubscribe(subscription) {
   if (typeof subscription === "function") subscription();
   else subscription?.unsubscribe?.();
@@ -106,7 +117,7 @@ export class ProductTourService {
       baseUrl: runtime.baseUrl
     });
     const localizedManifest = this.options.translate
-      ? await localizeValue(manifest, this.options.translate, this.options.translationPrefix)
+      ? { ...manifest, pages: await localizePages(manifest.pages, this.options.translate, this.options.translationPrefix) }
       : manifest;
     const manager = new ProductTourManager(localizedManifest, runtime);
     if (autoStart) await manager.start({ watchRoutes: runtime.watchRoutes });

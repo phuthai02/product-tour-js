@@ -2,10 +2,6 @@
   "$schema": "../../product-tour.schema.json",
   "id": "project-detail",
   "version": 1,
-  "match": {
-    "path": "/demo/projects/:id",
-    "mode": "glob"
-  },
   "theme": {
     "accentColor": "#ea580c"
   },

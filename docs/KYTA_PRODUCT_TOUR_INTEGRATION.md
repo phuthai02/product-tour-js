@@ -143,6 +143,18 @@ content/product-tours/product-tour.json
 
 Đường dẫn trong `include` được tính tương đối từ file đang chứa `include`.
 
+`include` dạng chuỗi như trên được tải hết ngay khi khởi tạo. Để chỉ tải file của trang đang mở, khai báo `match` tại `include` và bỏ `match` khỏi file page:
+
+```json
+"include": [
+  {
+    "src": "./pages/dashboard.json",
+    "id": "dashboard",
+    "match": { "path": "*/dashboard", "mode": "glob" }
+  }
+]
+```
+
 ## 2. Cài đặt
 
 Chạy tại thư mục frontend của module:

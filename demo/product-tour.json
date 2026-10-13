@@ -23,6 +23,13 @@
   },
   "include": [
     "./tours/shared-pages.json",
-    "./tours/project.json"
+    {
+      "src": "./tours/project.json",
+      "id": "project-detail",
+      "match": {
+        "path": "/demo/projects/:id",
+        "mode": "glob"
+      }
+    }
   ]
 }
