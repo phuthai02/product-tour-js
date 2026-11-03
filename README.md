@@ -135,7 +135,8 @@ Với Vite, React, Vue hoặc ứng dụng có thư mục `public`, đặt file 
     "finish": "Hoàn tất",
     "skip": "Bỏ qua",
     "close": "Đóng",
-    "progress": "Bước {current}/{total}"
+    "progress": "Bước {current}/{total}",
+    "autoNext": "Tự chuyển sau {seconds}s"
   },
   "steps": [
     {
@@ -299,7 +300,36 @@ Tự chuyển step khi user click target:
 
 Mặc định mỗi step tự chuyển sau 5 giây (`autoNext: 5000`). Đặt `autoNext` (ms) ở cấp tour/page để đổi mặc định cho mọi step, và override trong từng step; `0` là tắt. User vẫn có thể bấm Next/Back trước khi hết giờ, khi đó bộ đếm của step cũ bị hủy. Ở step cuối, hết giờ sẽ hoàn tất tour. Step `question` không kế thừa mặc định này để không cắt ngang lúc user đang trả lời; muốn tự chuyển thì đặt `autoNext` ngay trên step đó (field bắt buộc chưa trả lời vẫn chặn việc chuyển step).
 
-Khi `autoNext` đang chạy, footer hiện số giây còn lại theo `labels.autoNext` (mặc định `"Next in {seconds}s"`, `{seconds}` được thay bằng số giây còn lại), ví dụ `"autoNext": "Tự chuyển sau {seconds}s"`.
+Khi `autoNext` đang chạy, footer hiện số giây còn lại theo `labels.autoNext`. Mặc định là `"Next in {seconds}s"`; `{seconds}` được thay bằng số giây còn lại. Label chưa khai báo sẽ dùng chữ mặc định tiếng Anh, nên tour tiếng Việt cần khai báo `labels.autoNext` ở cấp tour hoặc manifest:
+
+```json
+{
+  "autoNext": 5000,
+  "labels": {
+    "autoNext": "Tự chuyển sau {seconds}s"
+  }
+}
+```
+
+Khi dùng `ProductTourService` hoặc adapter ngx-translate, có thể dùng translation key như các label khác. Bản dịch phải giữ nguyên `{seconds}`:
+
+```json
+{
+  "labels": {
+    "autoNext": "i18n:topBar.tour.labels.autoNext"
+  }
+}
+```
+
+```jsonc
+// vi.json
+{ "topBar": { "tour": { "labels": { "autoNext": "Tự chuyển sau {seconds}s" } } } }
+
+// en.json
+{ "topBar": { "tour": { "labels": { "autoNext": "Next in {seconds}s" } } } }
+```
+
+Ví dụ cấu hình thời gian cho tour và từng step:
 
 ```json
 {
