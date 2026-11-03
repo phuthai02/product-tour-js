@@ -11,6 +11,7 @@
     "skip": "Bỏ qua",
     "close": "Đóng",
     "progress": "Bước {current}/{total}",
+    "autoNext": "Tự chuyển sau {seconds}s",
     "required": "Vui lòng trả lời các câu hỏi bắt buộc."
   },
   "theme": {

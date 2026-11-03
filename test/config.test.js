@@ -316,6 +316,101 @@ test("page scroll lock is released while moving a clipped target and restored af
   assert.equal(tour.scrollLocked, true);
 });
 
+test("autoNext can be configured for the tour and overridden per step", () => {
+  const config = defineTourConfig({
+    autoNext: 10000,
+    steps: [
+      { type: "modal", content: "Inherited" },
+      { type: "modal", content: "Faster", autoNext: 1500 },
+      { type: "modal", content: "Manual", autoNext: 0 }
+    ]
+  });
+
+  assert.equal(defineTourConfig(minimalConfig).steps[0].autoNext, 5000);
+  const question = { type: "question", fields: [{ name: "role" }] };
+  assert.deepEqual(
+    defineTourConfig({ steps: [question, { ...question, id: "timed", autoNext: 8000 }] })
+      .steps.map((step) => step.autoNext),
+    [0, 8000]
+  );
+  assert.deepEqual(config.steps.map((step) => step.autoNext), [10000, 1500, 0]);
+  assert.throws(
+    () => defineTourConfig({ autoNext: -1, steps: [{ content: "Invalid" }] }),
+    /autoNext.*non-negative/
+  );
+  assert.throws(
+    () => defineTourConfig({ steps: [{ content: "Invalid", autoNext: "5s" }] }),
+    /autoNext.*non-negative/
+  );
+
+  const manifest = defineTourManifest({
+    autoNext: 3000,
+    pages: [{ id: "home", version: 1, match: "/", steps: [{ type: "modal", content: "Home" }] }]
+  });
+  assert.equal(manifest.pages[0].config.steps[0].autoNext, 3000);
+});
+
+test("autoNext advances the current step once its timer expires", async () => {
+  const events = [];
+  const tour = new ProductTour(
+    { steps: [{ type: "modal", content: "One", autoNext: 10 }, { type: "modal", content: "Two", autoNext: 0 }] },
+    { onEvent: (name) => events.push(name) }
+  );
+  let advanced = 0;
+  tour.next = () => { advanced += 1; };
+  tour.state = "active";
+  tour.currentIndex = 0;
+
+  tour._scheduleAutoNext(tour.config.steps[0], 0);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(advanced, 1);
+  assert.deepEqual(events, ["autonext"]);
+
+  tour._scheduleAutoNext(tour.config.steps[0], 0);
+  tour.currentIndex = 1;
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(advanced, 1, "a timer from a step the user already left must not fire");
+
+  tour._scheduleAutoNext(tour.config.steps[1], 1);
+  assert.equal(tour.autoNextTimer, null);
+});
+
+test("autoNext shows the remaining seconds next to the footer actions", () => {
+  const createNode = () => {
+    const node = {
+      className: "",
+      textContent: "",
+      children: [],
+      after(sibling) { actions.children.splice(actions.children.indexOf(node) + 1, 0, sibling); sibling.parent = actions; },
+      remove() { node.parent?.children.splice(node.parent.children.indexOf(node), 1); }
+    };
+    return node;
+  };
+  const find = (className) => actions.children.find((child) => child.className.split(" ").includes(className)) ?? null;
+  const actions = {
+    children: [],
+    querySelector: (selector) => find(selector.slice(1)),
+    prepend(child) { actions.children.unshift(child); child.parent = actions; }
+  };
+  const dismiss = createNode();
+  dismiss.className = "pt-action pt-action--dismiss";
+  dismiss.parent = actions;
+  actions.children.push(dismiss);
+
+  const tour = new ProductTour(
+    { labels: { autoNext: "Tự chuyển sau {seconds}s" }, steps: [{ type: "modal", content: "One", autoNext: 4000 }] },
+    { document: { createElement: createNode } }
+  );
+  tour.root = { querySelector: (selector) => (selector === ".pt-actions" ? actions : find(selector.slice(1))) };
+
+  tour._renderAutoNextCountdown(Date.now() + 3200);
+  assert.deepEqual(actions.children.map((child) => child.className), ["pt-action pt-action--dismiss", "pt-countdown"]);
+  assert.equal(find("pt-countdown").textContent, "Tự chuyển sau 4s");
+
+  tour._clearAutoNext();
+  assert.equal(find("pt-countdown"), null);
+});
+
 test("background scrolling is blocked while popover scrolling stays available", () => {
   const popoverContent = {};
   const popover = { contains: (target) => target === popoverContent };

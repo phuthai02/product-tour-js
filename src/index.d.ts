@@ -65,6 +65,8 @@ export interface TourStep {
   placement?: Placement;
   allowInteraction?: boolean;
   nextOnTargetClick?: boolean;
+  /** Milliseconds before the tour advances on its own; `0` disables it. Question steps default to `0`. */
+  autoNext?: number;
   showCloseButton?: boolean;
   padding?: number;
   progress?: ProgressConfig;
@@ -83,6 +85,8 @@ export interface ProductTourConfig {
   storageKey?: string;
   startDelay?: number;
   targetTimeout?: number;
+  /** Default `autoNext` for every non-question step, in milliseconds (default `5000`); `0` disables it. */
+  autoNext?: number;
   scrollBehavior?: "auto" | "smooth";
   onMissingTarget?: "skip" | "abort";
   closeOnEscape?: boolean;
@@ -98,6 +102,8 @@ export interface ProductTourConfig {
     skip: string;
     close: string;
     progress: string;
+    /** Countdown shown while `autoNext` runs; `{seconds}` is replaced. */
+    autoNext: string;
     required: string;
   }>;
   theme?: Partial<{

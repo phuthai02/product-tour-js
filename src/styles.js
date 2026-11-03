@@ -53,6 +53,7 @@ export const PRODUCT_TOUR_STYLES = `
 .pt-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 .pt-actions { display: flex; width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .pt-action--dismiss { margin-right: auto; }
+.pt-countdown { align-self: center; color: #64748b; font-size: 12px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pt-action { min-height: 36px; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; background: #fff; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .pt-action:hover, .pt-action:focus-visible { background: #f8fafc; border-color: #94a3b8; }
 .pt-action--primary { color: #fff; background: var(--pt-accent); border-color: var(--pt-accent); }

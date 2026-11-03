@@ -14,7 +14,7 @@ const PROGRESS_POSITIONS = new Set([
 ]);
 const TOUR_OPTION_KEYS = [
   "version", "autoStart", "showOnce", "markOnDismiss", "storage", "storageKey",
-  "startDelay", "targetTimeout", "scrollBehavior", "onMissingTarget", "closeOnEscape",
+  "startDelay", "targetTimeout", "autoNext", "scrollBehavior", "onMissingTarget", "closeOnEscape",
   "closeOnOverlayClick", "showCloseButton", "allowInteraction", "allowHtml", "labels", "theme", "progress"
 ];
 
@@ -28,6 +28,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   storageKey: "product-tour",
   startDelay: 0,
   targetTimeout: 3000,
+  autoNext: 5000,
   scrollBehavior: "smooth",
   onMissingTarget: "skip",
   closeOnEscape: true,
@@ -46,6 +47,7 @@ export const DEFAULT_CONFIG = Object.freeze({
     skip: "Skip",
     close: "Close",
     progress: "Step {current} of {total}",
+    autoNext: "Next in {seconds}s",
     required: "Please answer the required fields."
   }),
   theme: Object.freeze({
@@ -179,7 +181,7 @@ function normalizeNext(next, stepIndex) {
   });
 }
 
-function normalizeStep(step, index, defaultProgress, defaultShowCloseButton, defaultAllowInteraction) {
+function normalizeStep(step, index, defaultProgress, defaultShowCloseButton, defaultAllowInteraction, defaultAutoNext) {
   assert(isPlainObject(step), `steps[${index}] must be an object.`);
   assert(
     step.target === undefined || step.target === null || typeof step.target === "string",
@@ -229,6 +231,13 @@ function normalizeStep(step, index, defaultProgress, defaultShowCloseButton, def
     placement,
     allowInteraction: step.allowInteraction ?? defaultAllowInteraction,
     nextOnTargetClick: step.nextOnTargetClick ?? false,
+    // Questions only auto-advance when the step asks for it; an inherited timer
+    // would interrupt users while they are still answering.
+    autoNext: finiteNonNegative(
+      step.autoNext,
+      type === "question" ? 0 : defaultAutoNext,
+      `steps[${index}].autoNext`
+    ),
     showCloseButton: step.showCloseButton ?? defaultShowCloseButton,
     padding: finiteNonNegative(step.padding, 8, `steps[${index}].padding`),
     progress: normalizeProgress(step.progress, defaultProgress, `steps[${index}].progress`),
@@ -276,12 +285,14 @@ export function defineTourConfig(input) {
   assert(typeof allowInteraction === "boolean", '"allowInteraction" must be a boolean.');
 
   const progress = normalizeProgress(input.progress);
+  const autoNext = finiteNonNegative(input.autoNext, DEFAULT_CONFIG.autoNext, "autoNext");
   const steps = input.steps.map((step, index) => normalizeStep(
     step,
     index,
     progress,
     showCloseButton,
-    allowInteraction
+    allowInteraction,
+    autoNext
   ));
   validateStepReferences(steps);
   return {
@@ -295,6 +306,7 @@ export function defineTourConfig(input) {
     allowInteraction,
     startDelay: finiteNonNegative(input.startDelay, DEFAULT_CONFIG.startDelay, "startDelay"),
     targetTimeout: finiteNonNegative(input.targetTimeout, DEFAULT_CONFIG.targetTimeout, "targetTimeout"),
+    autoNext,
     progress,
     labels: { ...DEFAULT_CONFIG.labels, ...(input.labels ?? {}) },
     theme: { ...DEFAULT_CONFIG.theme, ...(input.theme ?? {}) },

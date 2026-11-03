@@ -37,6 +37,8 @@ export class ProductTour {
     this.answers = clone(runtime.initialAnswers);
     this.uid = `pt-${++instanceCount}`;
     this.popoverAnimation = null;
+    this.autoNextTimer = null;
+    this.autoNextTicker = null;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onScrollAttempt = this._onScrollAttempt.bind(this);
@@ -189,6 +191,7 @@ export class ProductTour {
   }
 
   async _showStep(index, direction, runId) {
+    this._clearAutoNext();
     let candidate = index;
     while (candidate >= 0 && candidate < this.config.steps.length) {
       if (runId !== this.runId || !this.isActive) return false;
@@ -333,6 +336,46 @@ export class ProductTour {
     this._animatePopover(popover, previousRect);
     popover.focus({ preventScroll: true });
     this._emit("step", { step, index, target, answers: this.getAnswers() });
+    this._scheduleAutoNext(step, index);
+  }
+
+  _scheduleAutoNext(step, index) {
+    this._clearAutoNext();
+    if (!(step.autoNext > 0)) return;
+    const runId = this.runId;
+    const deadline = Date.now() + step.autoNext;
+    this._renderAutoNextCountdown(deadline);
+    this.autoNextTicker = setInterval(() => this._renderAutoNextCountdown(deadline), 250);
+    this.autoNextTimer = setTimeout(() => {
+      this.autoNextTimer = null;
+      if (runId !== this.runId || !this.isActive || this.currentIndex !== index) return;
+      this._emit("autonext", { step, index, answers: this.getAnswers() });
+      this.next();
+    }, step.autoNext);
+  }
+
+  _clearAutoNext() {
+    clearTimeout(this.autoNextTimer);
+    clearInterval(this.autoNextTicker);
+    this.autoNextTimer = null;
+    this.autoNextTicker = null;
+    this.root?.querySelector(".pt-countdown")?.remove();
+  }
+
+  _renderAutoNextCountdown(deadline) {
+    const actions = this.root?.querySelector(".pt-actions");
+    if (!actions) return;
+    let countdown = actions.querySelector(".pt-countdown");
+    if (!countdown) {
+      countdown = this.document.createElement("span");
+      countdown.className = "pt-countdown";
+      // Sit between the dismiss link and the navigation buttons.
+      const dismiss = actions.querySelector(".pt-action--dismiss");
+      if (dismiss) dismiss.after(countdown);
+      else actions.prepend(countdown);
+    }
+    const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    countdown.textContent = format(this.config.labels.autoNext, { seconds });
   }
 
   _renderProgress(step, index) {
@@ -926,6 +969,7 @@ export class ProductTour {
   }
 
   _unmount() {
+    this._clearAutoNext();
     this._detachTargetListener();
     this.popoverAnimation?.cancel();
     this.popoverAnimation = null;

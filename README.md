@@ -297,6 +297,21 @@ Tự chuyển step khi user click target:
 }
 ```
 
+Mặc định mỗi step tự chuyển sau 5 giây (`autoNext: 5000`). Đặt `autoNext` (ms) ở cấp tour/page để đổi mặc định cho mọi step, và override trong từng step; `0` là tắt. User vẫn có thể bấm Next/Back trước khi hết giờ, khi đó bộ đếm của step cũ bị hủy. Ở step cuối, hết giờ sẽ hoàn tất tour. Step `question` không kế thừa mặc định này để không cắt ngang lúc user đang trả lời; muốn tự chuyển thì đặt `autoNext` ngay trên step đó (field bắt buộc chưa trả lời vẫn chặn việc chuyển step).
+
+Khi `autoNext` đang chạy, footer hiện số giây còn lại theo `labels.autoNext` (mặc định `"Next in {seconds}s"`, `{seconds}` được thay bằng số giây còn lại), ví dụ `"autoNext": "Tự chuyển sau {seconds}s"`.
+
+```json
+{
+  "autoNext": 5000,
+  "steps": [
+    { "target": "#menu", "title": "Menu", "content": "Tự chuyển sau 5 giây" },
+    { "target": "#search", "title": "Tìm kiếm", "autoNext": 2000 },
+    { "target": "#create-button", "title": "Tạo mới", "autoNext": 0 }
+  ]
+}
+```
+
 ### Question
 
 Question hiển thị form ở giữa màn hình. Tương tự modal, nội dung dài vẫn cuộn được nhưng scrollbar được ẩn:
@@ -750,6 +765,7 @@ Tắt tiến độ riêng một step:
     "skip": "Bỏ qua",
     "close": "Đóng",
     "progress": "Bước {current}/{total}",
+    "autoNext": "Tự chuyển sau {seconds}s",
     "required": "Vui lòng trả lời trường bắt buộc."
   }
 }
@@ -1500,6 +1516,7 @@ const manager = await initProductTours("/product-tour.json");
 | `dismiss` | Tour bị đóng/bỏ qua |
 | `stop` | Tour bị dừng mà không hoàn tất |
 | `missingtarget` | Không tìm thấy target |
+| `autonext` | Hết thời gian `autoNext`, tour tự chuyển step |
 | `skip` | Không chạy vì tour đã hoàn tất trước đó |
 | `reset` | Tour được reset |
 | `destroy` | Instance bị destroy |
@@ -1528,6 +1545,7 @@ document.addEventListener("product-tour:complete", (event) => {
 | `storageKey` | string | `product-tour` | Prefix của completion key |
 | `startDelay` | number | `0` | Số ms chờ trước khi bắt đầu |
 | `targetTimeout` | number | `3000` | Số ms chờ target render |
+| `autoNext` | number | `5000` | Số ms trước khi tự sang step tiếp theo; `0` là tắt; step có thể override; không áp dụng cho question |
 | `scrollBehavior` | string | `smooth` | Cách tự cuộn đến target: `smooth` hoặc `auto` |
 | `onMissingTarget` | string | `skip` | `skip` step hoặc `abort` tour |
 | `closeOnEscape` | boolean | `true` | Cho phép Escape đóng tour |
@@ -1555,6 +1573,7 @@ document.addEventListener("product-tour:complete", (event) => {
 | `placement` | string | `auto` hoặc `center` | Vị trí popover |
 | `allowInteraction` | boolean | `true` | Cho phép tương tác với target |
 | `nextOnTargetClick` | boolean | `false` | Sang step tiếp theo khi click target |
+| `autoNext` | number | Kế thừa (question: `0`) | Số ms trước khi tự sang step tiếp theo; `0` là tắt |
 | `showCloseButton` | boolean | Kế thừa | Override nút `×` |
 | `padding` | number | `8` | Khoảng trống quanh spotlight |
 | `progress` | object | Kế thừa | Override tiến độ |

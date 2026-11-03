@@ -30,6 +30,7 @@
     "storageKey": { "type": "string", "default": "product-tour" },
     "startDelay": { "type": "number", "minimum": 0, "default": 0 },
     "targetTimeout": { "type": "number", "minimum": 0, "default": 3000 },
+    "autoNext": { "type": "number", "minimum": 0, "default": 5000 },
     "scrollBehavior": { "enum": ["auto", "smooth"], "default": "smooth" },
     "onMissingTarget": { "enum": ["skip", "abort"], "default": "skip" },
     "closeOnEscape": { "type": "boolean", "default": true },
@@ -61,6 +62,7 @@
         "skip": { "type": "string" },
         "close": { "type": "string" },
         "progress": { "type": "string" },
+        "autoNext": { "type": "string" },
         "required": { "type": "string" }
       }
     },
@@ -199,6 +201,7 @@
         "placement": { "enum": ["auto", "top", "right", "bottom", "left", "center"] },
         "allowInteraction": { "type": "boolean", "default": true },
         "nextOnTargetClick": { "type": "boolean", "default": false },
+        "autoNext": { "type": "number", "minimum": 0 },
         "showCloseButton": { "type": "boolean" },
         "padding": { "type": "number", "minimum": 0, "default": 8 },
         "progress": { "$ref": "#/$defs/progress" },
@@ -256,6 +259,7 @@
         "storageKey": { "type": "string" },
         "startDelay": { "type": "number", "minimum": 0 },
         "targetTimeout": { "type": "number", "minimum": 0 },
+        "autoNext": { "type": "number", "minimum": 0 },
         "scrollBehavior": { "enum": ["auto", "smooth"] },
         "onMissingTarget": { "enum": ["skip", "abort"] },
         "closeOnEscape": { "type": "boolean" },
